@@ -1,11 +1,6 @@
 # release-prep — Templates
 
-Three fill-in-the-blank artifacts. Substitute `<TOKENS>` at render time.
-
-1. Keep-a-Changelog scaffold (when `CHANGELOG.md` is missing).
-2. New-release-section template (inserted into existing `CHANGELOG.md`).
-3. Announcement template (English chrome + French chrome). Bullet bodies
-   stay in their authored language.
+Fill-in-the-blank artifacts: changelog scaffold, release section, announcement, PR body.
 
 ---
 
@@ -161,3 +156,60 @@ entries), the announcement is replaced with a single short line:
 ```
 
 (French: `*<REPO_NAME> v<NEW>* — version interne. Aucun changement visible.`)
+
+---
+
+## §4 RELEASE PR BODY TEMPLATE
+
+Used by Phase 8. Sections with no content are omitted entirely.
+
+````markdown
+## Release: v<NEW_VERSION>
+
+**Branch:** `<SOURCE_BRANCH>` → `<TARGET_BRANCH>`
+
+---
+
+### What's in this release
+
+<CHANGELOG_SECTION>
+
+---
+
+### Files changed
+
+<details>
+<summary>Diff stat</summary>
+
+```
+<DIFF_STAT>
+```
+
+</details>
+
+---
+
+### Included PRs
+
+<INCLUDED_PRS>
+
+---
+
+### Links
+
+- Compare: <COMPARE_URL>
+- Full changelog: `CHANGELOG.md`
+````
+
+**Token substitution:**
+
+| Token | Value |
+|---|---|
+| `<NEW_VERSION>` | Computed version from Phase 5 |
+| `<SOURCE_BRANCH>` / `<TARGET_BRANCH>` | Resolved branch names |
+| `<CHANGELOG_SECTION>` | Verbatim block from Phase 4 (`## [<NEW>]` heading through the last bullet before the next `##`) — do not re-summarize; CHANGELOG.md and PR body must be byte-identical for this section |
+| `<DIFF_STAT>` | `git diff --stat origin/<target>...origin/<source> \| head -200`; if truncated append `(truncated — N more files)`; omit the entire "Files changed" section if empty |
+| `<INCLUDED_PRS>` | One line per PR from Phase 1 (all buckets including Internal): `- [#<N> — <title>](<URL>)`; for commits without a PR: `- [\`<short-hash>\` — <subject>](<commit-url>)` |
+| `<COMPARE_URL>` | `<COMPARE_BASE>/compare/v<PREV>...v<NEW>` |
+
+**Rendering rules:** see SKILL.md RULES (no test plan, no Claude/AI attribution).

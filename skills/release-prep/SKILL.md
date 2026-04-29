@@ -8,25 +8,19 @@ description: >
   announcement in English by default (or any requested language). Project-
   agnostic: detects package.json / pyproject.toml / Cargo.toml /
   VERSION. Never auto-commits, auto-pushes, or auto-tags. Re-callable: detects
-  an in-flight release and resumes. Triggers: "prepare release",
-  "cut a release", "release notes", "bump version", "deploy to prod",
-  "tag a release".
+  an in-flight release and resumes. Optionally opens a release PR with the
+  changelog section, file diff, and included PR list. Triggers: "prepare
+  release", "cut a release", "release notes", "bump version", "deploy to
+  prod", "tag a release".
 argument-hint: "[source-branch] [target-branch] [--lang=<code>] [--bump=<level>] [--prerelease=<id>] [--dry-run]"
 disable-model-invocation: true
 allowed-tools: Bash(git *) Bash(gh *) Bash(node *) Bash(jq *) Bash(grep *)
 ---
 
-# Release Prep — Plain-Language Release Notes, Version Bump, Tag Command
+# Release Prep
 
-Prepare a production release end-to-end without touching git history. The skill
-diffs source vs. target, classifies changes for semver, writes a non-developer
-summary into `CHANGELOG.md`, bumps the project's version file, and prints an
-annotated `git tag` command for the user to run. Manual git only.
-
-For semver classification rules, version-file detection, and the resume
-algorithm, see [references/workflow.md](references/workflow.md).
-For changelog/announcement templates, see
-[references/templates.md](references/templates.md).
+Semver rules/resume: [references/workflow.md](references/workflow.md).
+Templates: [references/templates.md](references/templates.md).
 
 ---
 
@@ -97,6 +91,15 @@ Cache results by PR number for the duration of the run. For linked issues,
 `gh issue view <N> --json number,title,labels,url` — useful for explaining
 *why* a change was made.
 
+Also capture a file-level diff (three-dot = common ancestor to source tip; not the two-dot `RANGE` above):
+
+```bash
+DIFF_STAT=$(git diff --stat origin/<target>...origin/<source> | head -200)
+DIFF_NAME_STATUS=$(git diff --name-status origin/<target>...origin/<source>)
+```
+
+Use as **supplementary reference only** — commits/PRs are primary. Catches file changes not described in commits (generated files, renames, lockfile bumps) and confirms "internal" commits touch no public-API files (see Phase 3).
+
 If `RANGE` is empty, stop with "nothing to release."
 
 ---
@@ -139,6 +142,16 @@ For each public change, write one ≤140-char sentence aimed at a non-developer:
   when present.
 - Otherwise derive from PR title + linked issue title + first non-trivia
   paragraph.
+- Cross-reference `DIFF_NAME_STATUS` to catch file-level changes not
+  described in any commit or PR body (renamed APIs, deleted config, new entry
+  points, lockfile updates). If `DIFF_NAME_STATUS` contains changed files
+  not accounted for by any commit, flag them to the user before writing
+  summaries and ask: user-facing or internal?
+- For the semver "no public API file changed" heuristic
+  ([workflow.md §1](references/workflow.md) row 10), treat any file matching
+  `src/**`, `lib/**`, `dist/**`, `*.ts`, `*.py`, `*.rs`, `*.go`, `*.java`,
+  `*.cs` (or the project's visible public surface) as a public-API file,
+  using `DIFF_NAME_STATUS` as ground truth.
 
 Show the summary; accept inline edits before writing to disk.
 
@@ -227,26 +240,88 @@ hint -> `en`. Render the announcement template from
 (headings/labels); bullet bodies stay in their authored language. Print a
 fenced block ready to copy.
 
+Print a fenced block ready to copy.
+
+---
+
+## PHASE 8: CREATE RELEASE PR
+
+> Interactive — always ask before creating or modifying a PR.
+> Under `--dry-run`: render and print the PR body + command only; skip the
+> confirmation prompt.
+
+### Step 8.1 — Check for an existing PR
+
+If `HAS_GH`, run:
+
+```bash
+gh pr list --base <target> --head <source> --state open --json number,title,url
+```
+
+- **PR exists** → display its number, title, and URL. Ask:
+  **VIEW / UPDATE BODY / SKIP**.
+  - VIEW: `gh pr view <N> --web`
+  - UPDATE BODY: render new body from
+    [references/templates.md §4](references/templates.md), show a diff of
+    old vs. new, confirm, then `gh pr edit <N> --body "..."`.
+    (See idempotency rule in
+    [references/workflow.md §4](references/workflow.md).)
+  - SKIP: stop.
+- **No open PR** → proceed to Step 8.2.
+- **Already merged** → print "Release PR for v<NEW> is already merged." Skip
+  Phase 8 entirely.
+- **Closed (not merged)** → offer to reopen: `gh pr reopen <N>`.
+
+If `HAS_GH` is false, skip Steps 8.1–8.3 and go directly to Step 8.4.
+
+### Step 8.2 — Confirm before creating
+
+Render the PR body from [references/templates.md §4](references/templates.md). Display a preview:
+
+- Title: `chore(release): v<NEW>` (check existing PR title convention per
+  [references/workflow.md §4](references/workflow.md))
+- Base/Head: `<target>` ← `<source>`
+- Body: rendered preview (truncated if very long)
+
+Ask: **CREATE PR / SKIP / EDIT TITLE**.
+- SKIP → go to Step 8.4 (print fallback command).
+- EDIT TITLE → accept a replacement inline, re-ask.
+- CREATE PR → Step 8.3.
+
+### Step 8.3 — Create (gh available)
+
+Execute the command from Step 8.4. On success: print the PR URL. On failure:
+print the error and fall through to Step 8.4.
+
+### Step 8.4 — Fallback (no gh auth or creation failed)
+
+Print this copy-paste block for the user to run manually:
+
+```bash
+gh pr create \
+  --base <target> \
+  --head <source> \
+  --title "chore(release): v<NEW>" \
+  --body "$(cat <<'PRBODY'
+<rendered-pr-body>
+PRBODY
+)"
+```
+
 Stop. Hand control back to the user.
 
 ---
 
 ## RULES (NON-NEGOTIABLE)
 
-- **Never auto-commit, auto-push, or auto-run `git tag`.** All git mutations
-  are manual; the skill prints commands, the user runs them.
-- **Never modify or delete an existing tag.** A tag matching `v<NEW>` means
-  the release is already cut — switch to announcement-only mode.
-- **Never add Claude/AI references** or co-author trailers in commits, PRs,
-  changelog entries, tag messages, or announcements (per global CLAUDE.md
-  and ck-tools README).
+- **Never auto-commit, auto-push, or auto-run `git tag`** — print commands only.
+- **Never modify or delete an existing tag.** If `v<NEW>` already exists, switch to announcement-only mode.
+- **Never add Claude/AI references** or co-author trailers in commits, PRs, changelog entries, tag messages, or announcements.
+- **Never create or modify a PR without explicit user confirmation.** Phase 8 must ask before `gh pr create` / `gh pr edit`. The fallback command is always printed.
 - **Never include a "Test plan" section** anywhere.
-- **Never reformat the version file** beyond the version field. Preserve all
-  other formatting and key order byte-for-byte.
-- **Detect before acting.** When detection is ambiguous, ask. Never guess
-  the version file or the previous tag.
-- **Idempotent.** Re-running with no new changes produces no diff and no
-  error.
+- **Never reformat the version file** — preserve all formatting and key order byte-for-byte.
+- **Detect before acting.** When ambiguous, ask. Never guess the version file or previous tag.
+- **Idempotent.** Re-running with no new changes produces no diff and no error.
 
 ---
 
@@ -277,3 +352,5 @@ Stop. Hand control back to the user.
 | Version file not detected | Skip Phase 5; do Phases 4/6/7 with user-supplied version. |
 | User passes `--bump=<level>` | Skip auto-classification; still bucket for changelog. |
 | `--dry-run` set | Print every diff and the tag command; touch no files. |
+| Release PR already open for this branch | Phase 8: offer VIEW / UPDATE BODY / SKIP. |
+| `gh` not authenticated at Phase 8 | Print `gh pr create` fallback command; skip interactive creation. |

@@ -1,10 +1,6 @@
 # release-prep — Workflow Reference
 
-Mechanics that are too verbose for `SKILL.md`. Three sections:
-
-1. Semver decision matrix.
-2. Version-file detection (readers + writers).
-3. Idempotency / resume detection algorithm.
+Mechanics deferred from `SKILL.md`: semver matrix, version-file detection, idempotency algorithm, PR creation logic.
 
 ---
 
@@ -109,10 +105,38 @@ has already been done. The four ordered checks:
    ask **OVERWRITE / KEEP / EDIT**. Then proceed to Phase 5.
 4. **None of the above** — fresh release. Run all phases.
 
-Re-running with the same arguments after a successful run must produce no
-diff and no error; the skill prints "release already prepared" and exits
-cleanly.
+Re-running with the same arguments after a successful run produces no diff and no error.
 
-**State storage.** None. The skill is stateless across runs. All "have we
-done this already?" detection comes from inspecting the working tree and
-git refs — not from a sidecar file.
+**State storage:** none — idempotency detection comes from the working tree and git refs, not a sidecar file.
+
+---
+
+## §4 RELEASE PR CREATION LOGIC
+
+### Existing PR detection
+
+Run `gh pr list --base <target> --head <source> --state open --json number,title,url`.
+Take the first result; warn if more than one open PR is found (edge case:
+user opened duplicates).
+
+If a **merged** PR whose title contains `v<NEW>` exists (`gh pr list --base
+<target> --state merged --limit 5 --json number,title,mergedAt`), Phase 8 is
+already done — skip entirely and print: "Release PR for v<NEW> is already
+merged."
+
+If a **closed** (not merged) PR exists, offer to reopen: `gh pr reopen <N>`.
+
+### Body update idempotency
+
+When the user chooses UPDATE BODY: render the new body from
+`templates.md §4`, then compute a character-level diff against the existing
+PR body (`gh pr view <N> --json body`). If the two are identical, report "PR
+body is already up to date" and skip the `gh pr edit` call.
+
+### PR title convention
+
+Default title: `chore(release): v<NEW>`. Before proposing it, check the last
+5 merged release PRs (`gh pr list --base <target> --state merged --limit 5
+--json title`) for an existing naming pattern. If a pattern is detected,
+surface it to the user and ask which convention to use.
+
