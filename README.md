@@ -16,12 +16,22 @@ More tools to come. Each is independent — install once, opt in per repo.
 
 ## Install
 
-Once published to a marketplace:
+`ck-tools` is distributed through **`ck-marketplace`**, the same marketplace
+that hosts [`ck-code`](https://github.com/ckandrinirina/ck-code). Add the
+marketplace once and install whichever plugins you need:
 
 ```bash
 # From inside Claude Code
-/plugin marketplace add ckandrinirina/ck-tools
-/plugin install ck-tools@ck-tools-marketplace
+/plugin marketplace add ckandrinirina/ck-code
+/plugin install ck-tools@ck-marketplace
+```
+
+If you already have `ck-marketplace` added (e.g. you use `ck-code`), refresh
+its catalog and install:
+
+```bash
+/plugin marketplace update ck-marketplace
+/plugin install ck-tools@ck-marketplace
 ```
 
 For local development, point Claude Code at this directory directly via your
@@ -35,7 +45,7 @@ in `.claude/settings.json`:
 ```json
 {
   "enabledPlugins": {
-    "ck-tools@ck-tools-marketplace": true
+    "ck-tools@ck-marketplace": true
   }
 }
 ```
