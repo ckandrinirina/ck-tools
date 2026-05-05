@@ -91,6 +91,25 @@ Token-bounded. **Stop at first useful hit** at every step.
 
 ---
 
+## PHASE 2.3: OPTIONAL GITHUB ISSUE (pre-implementation)
+
+Ask **one** yes/no question via `AskUserQuestion`:
+
+> Link this story to a GitHub Issue? (y / N)
+
+- **No** (default) — proceed to Phase 2.5.
+- **Yes** — invoke the existing `gh-issue` skill via the `Skill` tool with:
+  ```
+  --story <absolute path to STORY.md>
+  ```
+  `gh-issue` will interactively ask about labels, assignees, and whether to add
+  the issue to a GitHub Project — let it handle those questions; do not pre-empt
+  them. When it returns, capture the issue URL and store it for Phase 7's
+  suggested commit message (append `Closes #<n>` there). Do **not** also invoke
+  `gh-issue` in Phase 6.5 if it was already run here.
+
+---
+
 ## PHASE 2.5: STORY REVIEW GATE
 
 Print the story summary to the user:
@@ -212,8 +231,9 @@ Do **not** modify Status until the user explicitly approves.
 
 ## PHASE 6.5: OPTIONAL GITHUB ISSUE (post-acceptance)
 
-Runs only when the user picked **`Approve — mark DONE`** in Phase 6. Skipped
-on `Request changes` (loops back to Phase 3) and on `Abort`.
+Runs only when the user picked **`Approve — mark DONE`** in Phase 6 **and**
+no GitHub Issue was already created in Phase 2.3. Skipped on `Request changes`
+(loops back to Phase 3), on `Abort`, and when Phase 2.3 already ran.
 
 Ask **one** yes/no question via `AskUserQuestion`:
 
@@ -272,8 +292,10 @@ scope, not the post-completion summary.
   review gate is separate and does not count toward this cap.
 - **Never start Phase 3 without explicit user approval in Phase 2.5** — the story review gate is mandatory, not optional.
 - **Never mark Status `DONE` without explicit user approval in Phase 6.**
-- **Never auto-create GitHub Issues** — Phase 6.5 must ask one explicit
-  yes/no question; default is No. Only invoke `gh-issue` after Yes.
+- **Never auto-create GitHub Issues** — Phase 2.3 and Phase 6.5 must each ask
+  one explicit yes/no question; default is No. Only invoke `gh-issue` after Yes.
+- **Never run both Phase 2.3 and Phase 6.5 `gh-issue` creation** — if the user
+  said Yes in Phase 2.3, skip Phase 6.5 entirely.
 - **Never run more than 3 QA iterations.** After cap, defer remaining issues.
 - **Never duplicate the per-file change log.** It lives in `## Files Touched`,
   not in `## Implementation Summary`.
@@ -288,6 +310,7 @@ scope, not the post-completion summary.
 |---|---|
 | Invoked with `--story <path>` | Read it in Phase 0; skip re-deriving acceptance criteria. |
 | User picks "Abort" in Phase 2.5 | Leave STORY.md as-is; print its path; stop. |
+| User says Yes in Phase 2.3 | Invoke `gh-issue` skill; store issue URL for Phase 7; skip Phase 6.5. |
 | No test infrastructure | Phase 4 logs "no tests detected"; QA falls back to weak-code grep. |
 | `qa-validator` agent not registered | Run the Phase 5 inline fallback. |
 | User picks "Request changes" in Phase 6 | Re-enter Phase 3 with the change list; loop through 4–6. |
