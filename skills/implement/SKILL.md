@@ -190,6 +190,32 @@ Do **not** modify Status until the user explicitly approves.
 
 ---
 
+## PHASE 6.5: OPTIONAL GITHUB ISSUE (post-acceptance)
+
+Runs only when the user picked **`Approve — mark DONE`** in Phase 6. Skipped
+on `Request changes` (loops back to Phase 3) and on `Abort`.
+
+Ask **one** yes/no question via `AskUserQuestion`:
+
+> Track this work as a GitHub Issue? (y / N)
+
+- **No** (default) — proceed straight to Phase 7.
+- **Yes** — invoke the `gh-issue` skill via the `Skill` tool with arguments:
+  ```
+  --story <absolute path to STORY.md>
+  ```
+  The `gh-issue` skill handles its own auth check, preview confirmation,
+  issue creation, and optional GitHub Project assignment (see its Phase 2).
+  When it returns, capture the issue URL and append it to the suggested
+  commit message in Phase 7 as `Closes #<n>`.
+
+This phase is opt-in by design: ck-tools projects may not use GitHub Issues
+at all, and silent issue creation would surprise users. It also runs
+**before** Phase 7's status flip so the issue body reflects the accepted
+scope, not the post-completion summary.
+
+---
+
 ## PHASE 7: COMPLETION
 
 1. Edit STORY.md: `> **Status:** IN PROGRESS` → `> **Status:** DONE`.
@@ -225,6 +251,8 @@ Do **not** modify Status until the user explicitly approves.
 - **Never ask more than 2 clarifying questions in Phase 1.** The Phase 6
   review gate is separate and does not count toward this cap.
 - **Never mark Status `DONE` without explicit user approval in Phase 6.**
+- **Never auto-create GitHub Issues** — Phase 6.5 must ask one explicit
+  yes/no question; default is No. Only invoke `gh-issue` after Yes.
 - **Never run more than 3 QA iterations.** After cap, defer remaining issues.
 - **Never duplicate the per-file change log.** It lives in `## Files Touched`,
   not in `## Implementation Summary`.
@@ -241,4 +269,5 @@ Do **not** modify Status until the user explicitly approves.
 | No test infrastructure | Phase 4 logs "no tests detected"; QA falls back to weak-code grep. |
 | `qa-validator` agent not registered | Run the Phase 5 inline fallback. |
 | User picks "Request changes" in Phase 6 | Re-enter Phase 3 with the change list; loop through 4–6. |
+| User picks "Approve — mark DONE" in Phase 6 | Phase 6.5 asks one yes/no for optional GitHub Issue; default No. |
 | 3rd QA iteration still fails | Defer remaining issues; proceed to Phase 6. |
