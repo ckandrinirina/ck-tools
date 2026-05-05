@@ -91,6 +91,26 @@ Token-bounded. **Stop at first useful hit** at every step.
 
 ---
 
+## PHASE 2.5: STORY REVIEW GATE
+
+Print the story summary to the user:
+
+- Title + Mode
+- Acceptance Criteria (verbatim from STORY.md)
+- Files to Touch (best-guess list from Phase 1.2)
+- Implementation Plan (if any)
+
+Then call `AskUserQuestion` with two options:
+
+| Label | Effect |
+|---|---|
+| `Approve — start implementation` (Recommended) | Proceed to Phase 3 |
+| `Abort` | Leave STORY.md as-is; print its path; stop |
+
+Do **not** begin Phase 3 until the user explicitly approves.
+
+---
+
 ## PHASE 3: IMPLEMENT (reuse-first, minimal-diff)
 
 1. Edit STORY.md: `> **Status:** TODO` → `> **Status:** IN PROGRESS`.
@@ -250,6 +270,7 @@ scope, not the post-completion summary.
   external library or framework API is in play.
 - **Never ask more than 2 clarifying questions in Phase 1.** The Phase 6
   review gate is separate and does not count toward this cap.
+- **Never start Phase 3 without explicit user approval in Phase 2.5** — the story review gate is mandatory, not optional.
 - **Never mark Status `DONE` without explicit user approval in Phase 6.**
 - **Never auto-create GitHub Issues** — Phase 6.5 must ask one explicit
   yes/no question; default is No. Only invoke `gh-issue` after Yes.
@@ -266,6 +287,7 @@ scope, not the post-completion summary.
 | Situation | Action |
 |---|---|
 | Invoked with `--story <path>` | Read it in Phase 0; skip re-deriving acceptance criteria. |
+| User picks "Abort" in Phase 2.5 | Leave STORY.md as-is; print its path; stop. |
 | No test infrastructure | Phase 4 logs "no tests detected"; QA falls back to weak-code grep. |
 | `qa-validator` agent not registered | Run the Phase 5 inline fallback. |
 | User picks "Request changes" in Phase 6 | Re-enter Phase 3 with the change list; loop through 4–6. |
