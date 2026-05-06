@@ -1,11 +1,16 @@
 # Commit Message Examples
 
+Subject line stays in conventional-commit format for changelog and CI
+tooling. The body is plain language readable by non-engineers — describe
+what users can now do, see, or notice. No class names, file paths, or
+test method names.
+
 ## Conventional Commit Format
 
 ```
 <type>(<optional-scope>): <imperative summary, ≤70 chars>
 
-<body — explains WHAT changed and WHY, not HOW; wrap at 72 chars>
+<body — plain-language outcome for users; wrap at 72 chars>
 
 <optional footer: Closes #123, BREAKING CHANGE: ...>
 ```
@@ -28,14 +33,11 @@
 ## Example: Feature
 
 ```
-feat(auth): add OAuth2 callback handler
+feat(auth): sign in with a Google account
 
-Wire the OAuth2 callback route to exchange the authorization code for a
-session token and persist it via SessionStore.
-
-- Added /auth/callback handler
-- Added token exchange via OAuthClient.exchange()
-- Added integration test for the happy path
+Users can now sign in using their existing Google account instead of
+creating a new password. The option appears on the sign-in screen
+alongside the email and password fields.
 
 Closes #142
 ```
@@ -43,13 +45,11 @@ Closes #142
 ## Example: Bug Fix
 
 ```
-fix(api): handle null user in profile lookup
+fix(profile): no more crash on empty profile
 
-ProfileService.lookup() threw NullPointerException when the request
-authenticated user existed but had no associated profile row.
-
-- Added null guard in ProfileService.lookup()
-- Added regression test: testLookupWithoutProfile
+Profile pages crashed for users who hadn't filled in their profile yet.
+Visiting the page now shows the empty profile placeholder instead of an
+error.
 
 Closes #88
 ```
@@ -57,19 +57,19 @@ Closes #88
 ## Example: Refactor
 
 ```
-refactor(db): extract query builder from repository
+refactor(db): consolidate query handling
 
-Move SQL construction out of UserRepository into a dedicated QueryBuilder
-to enable reuse from the OrderRepository and simplify upcoming pagination
-work. Behaviour unchanged; covered by existing tests.
+Restructures how database queries are organised so the same approach can
+be reused by upcoming features. Behaviour is unchanged for end users.
 ```
 
 ## Example: Chore
 
 ```
-chore(deps): bump axios from 1.6.2 to 1.7.4
+chore(deps): security patch for a network library
 
-Patch security advisory CVE-2024-XXXXX. No API changes.
+Picks up a security patch for one of the libraries the app uses to talk
+to external services. No user-visible changes.
 ```
 
 ## Multi-line HEREDOC Pattern
@@ -78,10 +78,10 @@ For any commit message with a body, use HEREDOC to preserve formatting:
 
 ```bash
 git commit -m "$(cat <<'EOF'
-feat(auth): add OAuth2 callback handler
+feat(auth): sign in with a Google account
 
-Wire the OAuth2 callback route to exchange the authorization code for a
-session token and persist it via SessionStore.
+Users can now sign in using their existing Google account instead of
+creating a new password.
 
 Closes #142
 EOF
@@ -97,10 +97,12 @@ EOF
 
 ## Body Rules
 
+- Plain-language outcome a non-engineer can read
 - Wrap at 72 characters
-- Explain WHAT changed and WHY — never HOW (the diff shows how)
 - Blank line between subject and body
 - Bullet lists are fine for multiple discrete changes
+- Never include: story IDs, epic names, AC checklists, test-count tallies,
+  class/function names, file paths, internal tool names
 
 ## Footer Rules
 

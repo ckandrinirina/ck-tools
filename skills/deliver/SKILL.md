@@ -74,14 +74,17 @@ Present the grouped lists and ask: **"Stage these files? YES / ADJUST"**.
 Never run `git add -A` or `git add .`; always stage by explicit path.
 
 ### 2.2 Craft Commit Message
-Conventional types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`,
-`style`, `perf`, `build`, `ci`.
+Subject line stays in **conventional commits** format. Types: `feat`,
+`fix`, `refactor`, `test`, `docs`, `chore`, `style`, `perf`, `build`,
+`ci`. Body is plain language readable by non-engineers.
 
 Format:
 ```
 <type>(<optional-scope>): <imperative summary, ≤70 chars>
 
-<body — what changed and WHY, not HOW>
+<body — describe what users can now do, see, or notice; plain language;
+wrap at 72 chars; never mention class/function names, file paths, or
+test method names>
 
 <optional footer: Closes #123, BREAKING CHANGE: …>
 ```
@@ -152,8 +155,11 @@ If push fails (no remote, auth, …): surface the error, suggest fixes
 (`git remote add origin …`, `gh auth login`), and stop the PR flow.
 
 ### 4.4 Create PR
-PR title = commit subject line. PR body templates and full `gh pr create`
-command: [references/pr-templates.md](references/pr-templates.md).
+PR title = commit subject line. PR body is read by PMs, designers, and
+stakeholders — write it in plain language: what users can now do or
+notice, no file paths, no class names, no test counts. Body templates
+and full `gh pr create` command:
+[references/pr-templates.md](references/pr-templates.md).
 
 If `gh` is not installed or authenticated: print the PR URL the user can
 open manually (`https://github.com/<owner>/<repo>/compare/<base>...<head>`)
@@ -175,8 +181,10 @@ Print:
 ## STANDALONE GUIDELINES
 
 ### Commit Messages Must Be Clean
-- Conventional commits format; subject ≤ 70 chars; imperative mood
-- Body explains WHAT and WHY, not HOW; wrap at 72 chars
+- Conventional commits format on the subject; ≤ 70 chars; imperative mood
+- Body is plain language readable by non-engineers — what users can now do, see, or notice
+- Body never mentions class names, function names, file paths, test method names, or test-count tallies
+- Wrap body at 72 chars
 - Add `Closes #N` / `Fixes #N` only when the user has confirmed the issue
 
 ### Stage Selectively
