@@ -1,7 +1,7 @@
 {
   "name": "ck-tools",
   "description": "Optional toolkit of utility skills for Claude Code (dependency upgrades, audits, snapshots, and other repo-level chores). Designed to coexist with ck-code without overlapping its spec-driven workflow.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": {
     "name": "ckandrinirina",
     "email": "ckandrinirina@gmail.com"
