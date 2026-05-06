@@ -82,6 +82,39 @@ Append once when entering Phase 3 (empty list); add one line per file as it is t
 
 ---
 
+## Phase 3 — Unplanned Changes (append on first deviation, then per-change)
+
+Append once on the first unplanned change; add one line per subsequent
+unplanned change. Skip entirely on a clean run (no heading written when
+empty).
+
+```markdown
+
+## Unplanned Changes
+- <path> — <one-line what> — <why it was needed during the planned work>
+```
+
+**Format rules:**
+- One bullet per change. Three slash-separated fields: path, what, why.
+- "Why" must explain what triggered the change during the planned work
+  (e.g., "broke test for AC-2 without it", "needed twice by planned helper",
+  "REFACTOR mode — adjacent code").
+- If the same file is touched again later, update its existing line in place
+  rather than adding a duplicate.
+- This section coexists with `Files Touched` — `Files Touched` records every
+  modified file with a one-line summary; `Unplanned Changes` records only
+  those outside the Phase 2 `## Files to Touch` plan, and explains why.
+- Distinct from `## Deferred Follow-ups`: that section records work NOT done
+  (left for later); `Unplanned Changes` records work that WAS done outside
+  the original plan.
+
+Examples:
+- `- src/api/user.ts — added null check in getUser() — broke test for AC-2 without it`
+- `- src/queue/retry.go — extracted retryWithBackoff() — needed twice by planned helper, would have duplicated`
+- `- tests/helpers/mock_clock.ts — new file — planned tests required time-mocking, not anticipated in Files to Touch`
+
+---
+
 ## Phase 5 — Deferred Follow-ups (append only if QA returns PARTIAL or cap hit)
 
 ```markdown
@@ -109,6 +142,7 @@ Skip this section entirely on clean PASS.
 **Test result:** <PASS | FAIL | NOT_RUN>
 **Lint/typecheck:** <command + result, or "none detected">
 **QA verdict:** <PASS | PARTIAL | FAIL after 3 iterations>
+**Unplanned changes:** <count, or "none">
 **Deferred follow-ups:** <count, or "none">
 
 ### Suggested commit

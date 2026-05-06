@@ -152,7 +152,15 @@ Do **not** begin Phase 3 until the user explicitly approves.
    Examples: `- src/utils/string.go — added Reverse(s string) string helper`,
    `- src/api/user.ts — fixed null-return regression in getUser()`. Format
    rules in [references/story-template.md](references/story-template.md).
-7. For complex tasks with a numbered Implementation Plan: tick each subtask
+7. **Unplanned-changes log:** whenever a change goes beyond the Phase 2
+   `## Files to Touch` list — drive-by fix, unrelated refactor needed to make
+   tests pass, or a new file/function not anticipated — also append one line
+   to a `## Unplanned Changes` section: `- <path> — <what> — <why>`. This is
+   **in addition to** the `## Files Touched` line, not a replacement.
+   `Files Touched` records every file; `Unplanned Changes` records only those
+   outside the original plan. REFACTOR mode still logs here — the "why" field
+   can read "REFACTOR mode — adjacent code". Empty section = omit the heading.
+8. For complex tasks with a numbered Implementation Plan: tick each subtask
    `- [ ]` → `- [x]` in the same `Edit` call that adds the code, to amortise
    token cost.
 
@@ -264,8 +272,9 @@ scope, not the post-completion summary.
 3. Append the Implementation Summary block from
    [references/story-template.md](references/story-template.md). It records:
    completion date, total files touched, test command + result,
-   lint/typecheck result, QA verdict, deferred follow-ups count, and a
-   suggested conventional-commits commit message.
+   lint/typecheck result, QA verdict, **unplanned changes count** (from
+   `## Unplanned Changes` if present, else "none"), deferred follow-ups
+   count, and a suggested conventional-commits commit message.
 4. Print to the user: STORY.md path + the suggested commit message.
 5. **Never auto-commit, push, or tag.** The user runs the commit themself.
 
@@ -299,6 +308,12 @@ scope, not the post-completion summary.
 - **Never run more than 3 QA iterations.** After cap, defer remaining issues.
 - **Never duplicate the per-file change log.** It lives in `## Files Touched`,
   not in `## Implementation Summary`.
+- **Log unplanned changes inline.** Any file touched outside `## Files to
+  Touch`, drive-by fix, or unscoped helper gets one line in
+  `## Unplanned Changes` (`- <path> — <what> — <why>`) at the moment of the
+  change. This complements (does not replace) the `## Files Touched` log and
+  is distinct from `## Deferred Follow-ups` (which records work NOT done).
+  Empty section = omit the heading.
 - **Never load a skill not present in the `find .claude/skills` output** — no
   inference from training data.
 
