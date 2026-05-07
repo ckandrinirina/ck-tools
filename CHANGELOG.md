@@ -5,6 +5,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), [Semantic Vers
 
 ## [Unreleased]
 
+## [1.0.3] — 2026-05-07
+
+### Added
+- `CHANGELOG.md` — full release history in Keep a Changelog format, from v0.1.0 to present.
+
 ## [1.0.2] — 2026-05-06
 
 ### Added
