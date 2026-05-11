@@ -5,6 +5,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), [Semantic Vers
 
 ## [Unreleased]
 
+## [1.0.4] — 2026-05-11
+
+### Changed
+- **implement**: enforces SOLID twice — design pass in Phase 3 step 3 (appends a `## SOLID Design` section to STORY.md using a one-line-per-principle template) and inline compliance check in Phase 4 step 3 (surfaces violations as refactor items against the diff). Both passes skip for trivial changes (typo, single-line rename, comment edit, single-line value tweak). New `references/solid-review.md` holds templates, skip table, and common refactorings. Implementation Summary records the SOLID outcome. Matches `ck-code/build` rigor while keeping the on-the-go ergonomics.
+
 ## [1.0.3] — 2026-05-07
 
 ### Added
