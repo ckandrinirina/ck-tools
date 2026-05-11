@@ -17,6 +17,8 @@ allowed-tools: Read, Write, Edit, Bash, Grep, Glob, Skill, Agent, AskUserQuestio
 Detection tables (project type → tooling, skill patterns, weak-code heuristics):
 [references/detection.md](references/detection.md). Story file scaffold and
 section formats: [references/story-template.md](references/story-template.md).
+SOLID design + compliance templates applied at Phase 3 and Phase 4:
+[references/solid-review.md](references/solid-review.md).
 
 ---
 
@@ -130,21 +132,27 @@ Do **not** begin Phase 3 until the user explicitly approves.
 
 ---
 
-## PHASE 3: IMPLEMENT (reuse-first, minimal-diff)
+## PHASE 3: IMPLEMENT (SOLID-first, reuse-first, minimal-diff)
 
 1. Edit STORY.md: `> **Status:** TODO` → `> **Status:** IN PROGRESS`.
 2. Append an empty `## Files Touched` section to STORY.md (template in
    [references/story-template.md](references/story-template.md)).
-3. **Reuse-first:** before writing any new code, re-read the Phase 1.2 grep
+3. **SOLID design** (skip for trivial changes — see
+   [references/solid-review.md §3](references/solid-review.md)): apply each
+   SOLID principle to the planned change. Append `## SOLID Design` to
+   STORY.md using the template in
+   [references/solid-review.md §1](references/solid-review.md) — one line per
+   principle; `N/A — <reason>` when not applicable, never omit a line.
+4. **Reuse-first:** before writing any new code, re-read the Phase 1.2 grep
    results. If an existing helper covers the task, extend it; only create new
    code when no existing helper fits.
-4. Apply changes via `Edit` whenever possible (smaller diffs than `Write`).
-5. **Smart test policy:**
+5. Apply changes via `Edit` whenever possible (smaller diffs than `Write`).
+6. **Smart test policy:**
    - New public function or non-trivial logic → add a minimal test.
    - Trivial typo / single-line rename / comment edit → skip the test.
    - Mode is `FIX` → add a regression test that fails before the fix and
      passes after it. (The `qa-validator` agent will verify this in Phase 5.)
-6. **Per-file logging:** as each file is modified, append one line to
+7. **Per-file logging:** as each file is modified, append one line to
    `## Files Touched`:
    ```
    - <path> — <one-line summary of what changed>
@@ -152,7 +160,7 @@ Do **not** begin Phase 3 until the user explicitly approves.
    Examples: `- src/utils/string.go — added Reverse(s string) string helper`,
    `- src/api/user.ts — fixed null-return regression in getUser()`. Format
    rules in [references/story-template.md](references/story-template.md).
-7. **Unplanned-changes log:** whenever a change goes beyond the Phase 2
+8. **Unplanned-changes log:** whenever a change goes beyond the Phase 2
    `## Files to Touch` list — drive-by fix, unrelated refactor needed to make
    tests pass, or a new file/function not anticipated — also append one line
    to a `## Unplanned Changes` section: `- <path> — <what> — <why>`. This is
@@ -160,13 +168,13 @@ Do **not** begin Phase 3 until the user explicitly approves.
    `Files Touched` records every file; `Unplanned Changes` records only those
    outside the original plan. REFACTOR mode still logs here — the "why" field
    can read "REFACTOR mode — adjacent code". Empty section = omit the heading.
-8. For complex tasks with a numbered Implementation Plan: tick each subtask
+9. For complex tasks with a numbered Implementation Plan: tick each subtask
    `- [ ]` → `- [x]` in the same `Edit` call that adds the code, to amortise
    token cost.
 
 ---
 
-## PHASE 4: REGRESSION + REFACTOR
+## PHASE 4: REGRESSION + SOLID REVIEW + REFACTOR
 
 1. **Run the test command** detected in Phase 1.1 (per
    [references/detection.md §1](references/detection.md)). If no test infra
@@ -176,12 +184,19 @@ Do **not** begin Phase 3 until the user explicitly approves.
 2. **Lint / typecheck:** run only the tools whose config files are present
    (eslint config, tsconfig, ruff config, mypy config, golangci-lint config).
    One command per tool max. Surface failures to the user before Phase 5.
-3. **Refactor pass:** re-read the diff using `git diff` or by re-reading the
-   touched files. Apply at most **one** targeted refactor that improves
-   reuse, removes duplication, or shrinks scope. Never refactor unrelated
-   code. If the refactor changes a file already in `## Files Touched`,
-   update its existing line in place — do not duplicate.
-4. **Re-run tests** if any code changed during the refactor pass.
+3. **SOLID compliance check** (skip if Phase 3 step 3 was skipped): re-read
+   the diff via `git diff` against the `## SOLID Design` section, using the
+   inline template in [references/solid-review.md §2](references/solid-review.md).
+   For each principle mark compliant or record an ISSUE (violation + fix).
+   Inline only — does not write to STORY.md.
+4. **Refactor pass:** apply (a) at most **one** targeted refactor that
+   improves reuse, removes duplication, or shrinks scope, AND (b) every
+   ISSUE recorded in step 3. Never refactor unrelated code. Common fixes
+   table in [references/solid-review.md §4](references/solid-review.md). If
+   the refactor changes a file already in `## Files Touched`, update its
+   existing line in place — do not duplicate.
+5. **Re-run tests** if any code changed during step 4. Tests must stay
+   green; if a refactor breaks a test, revert and reconsider.
 
 ---
 
@@ -272,7 +287,8 @@ scope, not the post-completion summary.
 3. Append the Implementation Summary block from
    [references/story-template.md](references/story-template.md). It records:
    completion date, total files touched, test command + result,
-   lint/typecheck result, QA verdict, **unplanned changes count** (from
+   lint/typecheck result, **SOLID outcome** (PASS / issues fixed in refactor /
+   skipped — trivial), QA verdict, **unplanned changes count** (from
    `## Unplanned Changes` if present, else "none"), deferred follow-ups
    count, and a suggested conventional-commits commit message.
 4. Print to the user: STORY.md path + the suggested commit message.
@@ -284,6 +300,9 @@ scope, not the post-completion summary.
 
 - **Never modify code before STORY.md is written.** The story is the source of
   truth for the run.
+- **Apply SOLID twice — design (Phase 3 step 3) AND review (Phase 4 step 3).**
+  Skip both only for trivial changes (typo, single-line rename, comment edit,
+  single-line value tweak). Full skip table: [references/solid-review.md §3](references/solid-review.md).
 - **Never skip skill detection** — always run `find .claude/skills` once per
   invocation, even if the project looks ck-code-free.
 - **Never run a regression suite once and skip it on subsequent edits** —
@@ -326,6 +345,8 @@ scope, not the post-completion summary.
 | Invoked with `--story <path>` | Read it in Phase 0; skip re-deriving acceptance criteria. |
 | User picks "Abort" in Phase 2.5 | Leave STORY.md as-is; print its path; stop. |
 | User says Yes in Phase 2.3 | Invoke `gh-issue` skill; store issue URL for Phase 7; skip Phase 6.5. |
+| Trivial change (typo, single-line rename, comment edit) | Skip Phase 3 step 3 and Phase 4 step 3 (SOLID passes). |
+| Non-trivial change | Both SOLID passes mandatory — design writes `## SOLID Design`; review surfaces ISSUE items for the refactor pass. |
 | No test infrastructure | Phase 4 logs "no tests detected"; QA falls back to weak-code grep. |
 | `qa-validator` agent not registered | Run the Phase 5 inline fallback. |
 | User picks "Request changes" in Phase 6 | Re-enter Phase 3 with the change list; loop through 4–6. |

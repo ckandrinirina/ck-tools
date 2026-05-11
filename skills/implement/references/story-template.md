@@ -61,6 +61,29 @@ Edit:
 
 ---
 
+## Phase 3 — SOLID Design (append at start of Phase 3, skip for trivial changes)
+
+Full template + skip rules: [solid-review.md §1](solid-review.md). Appended once
+at the start of Phase 3, before any code is written. Skip only for typos,
+single-line renames, comment edits, or single-line value tweaks (see
+[solid-review.md §3](solid-review.md) for the full skip table).
+
+```markdown
+
+## SOLID Design
+
+**S — Single Responsibility:** <one line, or "N/A — <reason>">
+**O — Open/Closed:** <one line, or "N/A — <reason>">
+**L — Liskov Substitution:** <one line, or "N/A — <reason>">
+**I — Interface Segregation:** <one line, or "N/A — <reason>">
+**D — Dependency Inversion:** <one line, or "N/A — <reason>">
+```
+
+Re-edit lines in place if the design changes during Phase 3; never append a
+second SOLID Design block.
+
+---
+
 ## Phase 3 — Files Touched (append; update incrementally)
 
 Append once when entering Phase 3 (empty list); add one line per file as it is touched.
@@ -141,6 +164,7 @@ Skip this section entirely on clean PASS.
 **Test command:** <command run, or "none — no test infra detected">
 **Test result:** <PASS | FAIL | NOT_RUN>
 **Lint/typecheck:** <command + result, or "none detected">
+**SOLID:** <PASS | issues fixed in refactor | skipped — trivial change>
 **QA verdict:** <PASS | PARTIAL | FAIL after 3 iterations>
 **Unplanned changes:** <count, or "none">
 **Deferred follow-ups:** <count, or "none">
