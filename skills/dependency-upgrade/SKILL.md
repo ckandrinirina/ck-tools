@@ -27,6 +27,16 @@ resume detection algorithm), see [references/workflow.md](references/workflow.md
 
 ---
 
+## EFFORT SCALING
+
+Adapt thoroughness to the current effort level (**${CLAUDE_EFFORT}**):
+
+- **low** — Safe bumps only: patch + minor updates and direct `npm audit fix`; defer all framework majors to the deferred-majors phase.
+- **medium** (default) — Full phased plan as documented (foundation → CVEs → minors → framework majors → deferred), standard verification per phase.
+- **high / xhigh / max** — Add a complete risk matrix with blast-radius analysis, research each major's migration guide via context7, expand per-phase verification checklists, and capture before/after snapshots for every phase.
+
+---
+
 ## INPUT
 
 `$ARGUMENTS` may contain:

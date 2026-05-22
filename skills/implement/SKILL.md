@@ -22,6 +22,16 @@ SOLID design + compliance templates applied at Phase 3 and Phase 4:
 
 ---
 
+## EFFORT SCALING
+
+Adapt research and verification depth to the current effort level (**${CLAUDE_EFFORT}**):
+
+- **low** — Implement directly from the task; minimal research; run the existing build/test once.
+- **medium** (default) — Standard flow: detect tooling, follow skill patterns, apply the SOLID/weak-code review, verify build + tests.
+- **high / xhigh / max** — Research libraries via context7 before coding, write tests first where practical, run the full SOLID + compliance review, and verify edge cases and error paths explicitly.
+
+---
+
 ## INPUT
 
 `$ARGUMENTS` is a free-form task description plus optional flags:
