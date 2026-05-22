@@ -5,6 +5,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), [Semantic Vers
 
 ## [Unreleased]
 
+## [1.0.5] — 2026-05-22
+
+### Added
+- **dependency-upgrade, implement**: effort-aware behavior via `${CLAUDE_EFFORT}` — both skills now scale their depth to the active effort level (low = safe/minimal, medium = standard flow, high/xhigh/max = deep research, full risk/SOLID review, and expanded verification).
+
 ## [1.0.4] — 2026-05-11
 
 ### Changed
