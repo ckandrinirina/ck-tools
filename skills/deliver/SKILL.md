@@ -200,6 +200,11 @@ See the CRITICAL RULE at the top. It applies to commit messages, PR titles
 and bodies, branch names, and any GitHub artefact this skill produces.
 Cannot be overridden by user request.
 
+## NEXT — native pairing (optional, user-driven)
+
+Before this skill opens a PR, the native `/code-review` (or `/code-review --fix`) gives a
+deeper read-only pass on the diff. See [native-commands.md](../../references/native-commands.md).
+
 ## RULES
 
 - **Never commit directly to `main`, `master`, `develop`, or `release/*`** unless the user explicitly overrides Phase 0.

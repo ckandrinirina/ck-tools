@@ -306,6 +306,15 @@ scope, not the post-completion summary.
 
 ---
 
+## NEXT — native speed-ups (optional, user-driven)
+
+See [native-commands.md](../../references/native-commands.md):
+- Run the verification loop autonomously with `/goal "the build passes and all tests are green"` — a cheap verifier model checks each turn.
+- Toggle `/fast` for **small** tasks; keep it **off** for large refactors that need full reasoning.
+- Before committing with `/ck-tools:deliver`, a `/code-review --fix` pass is available on the diff.
+
+---
+
 ## RULES (NON-NEGOTIABLE)
 
 - **Never modify code before STORY.md is written.** The story is the source of

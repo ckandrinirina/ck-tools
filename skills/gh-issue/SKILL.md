@@ -9,6 +9,7 @@ description: >
 argument-hint: "[title-or-description] [--story <path>] [--project <number>] [--label <name>] [--assignee <user>]"
 disable-model-invocation: true
 allowed-tools: Read, Bash(git *), Bash(gh *), AskUserQuestion
+effort: low
 ---
 
 # gh-issue — Single GitHub Issue (Optional Project)
