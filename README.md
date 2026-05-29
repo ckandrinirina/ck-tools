@@ -64,6 +64,11 @@ This keeps unrelated repos free of the toolkit's slash commands.
 | `/ck-tools:implement` | Implement a feature, fix, or refactor in the current repo. Accepts a free-text task description and optional `--story <path>` to resume from an existing story file. |
 | `/ck-tools:release-prep` | Prepare a release from `[source-branch]` -> `[target-branch]` (defaults `dev` -> `main`). Updates `CHANGELOG.md`, bumps the version file, prints an annotated `git tag` command and a deployment announcement. Flags: `--lang=<code>`, `--bump=<level>`, `--prerelease=<id>`, `--dry-run`. |
 
+## Native Claude Code integration
+
+- **`PostToolUse(Write|Edit)` hook** auto-formats files after edits (prettier / rustfmt / ruff / black / gofmt / shfmt; no-op when the formatter is absent) — `command`-type, zero model-token cost.
+- **`references/native-commands.md`** pairs built-in commands with ck-tools skills: `/goal` for autonomous verification loops, `/code-review --fix` before a `deliver` PR, and an intelligent `/fast` decision table (on for small tasks, off for large refactors). `/fast` is toggled by you — a plugin cannot enable it.
+
 ## Design principles
 
 - **Independent skills.** Each skill is self-contained and re-callable. No

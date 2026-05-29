@@ -5,6 +5,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), [Semantic Vers
 
 ## [Unreleased]
 
+## [2.0.0] — 2026-05-29
+
+### Added
+- **hooks**: new `PostToolUse(Write|Edit)` hook best-effort auto-formats touched files (prettier/rustfmt/ruff/black/gofmt/shfmt, no-op when the formatter is absent). `command`-type — zero model-token cost.
+- **native-commands** (new `references/native-commands.md`): maps Claude Code built-ins to ck-tools skills — `/goal` for autonomous verification loops, `/code-review --fix` pre-PR, and an intelligent `/fast` decision table. Linked from `implement` and `deliver`.
+
+### Changed
+- **token efficiency**: added `effort: low` to `gh-issue`.
+
 ## [1.0.6] — 2026-05-29
 
 ### Changed

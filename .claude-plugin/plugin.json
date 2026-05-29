@@ -3,7 +3,8 @@
   "name": "ck-tools",
   "displayName": "CK Tools",
   "description": "Optional toolkit of utility skills for Claude Code (dependency upgrades, audits, snapshots, and other repo-level chores). Designed to coexist with ck-code without overlapping its spec-driven workflow.",
-  "version": "1.0.6",
+  "version": "2.0.0",
+  "hooks": "./hooks/hooks.json",
   "author": {
     "name": "ckandrinirina",
     "email": "ckandrinirina@gmail.com"
