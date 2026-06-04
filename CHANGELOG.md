@@ -5,6 +5,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), [Semantic Vers
 
 ## [Unreleased]
 
+## [2.0.2] — 2026-06-04
+
+### Added
+
+- **dependency-upgrade**: New ck-tools-local subagent fan-out contract (`references/subagent-fanout.md`) plus gated read-only fan-out in Phase 1.2 classification — with ≥8 outdated/audit findings, one investigator per package greps usage and fetches migration notes concurrently, then the orchestrator merges and authors `critical-files.md`. Investigation only: all of Phase 2 (install, lockfile writes, shared build/test, fail-fast gate) and SOKA subagent routing stay strictly sequential; below ~8 findings, classification runs inline.
+
 ## [2.0.1] — 2026-05-29
 
 ### Fixed
