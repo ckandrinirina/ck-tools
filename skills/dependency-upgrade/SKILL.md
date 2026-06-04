@@ -40,6 +40,7 @@ Adapt thoroughness to the current effort level (**${CLAUDE_EFFORT}**):
 ## INPUT
 
 `$ARGUMENTS` may contain:
+
 - An optional path to the repo root (default: current working directory).
 - An optional `--new` flag to force-start a fresh cycle even when an active
   one exists (e.g. the previous cycle is abandoned).
@@ -92,7 +93,7 @@ work — start a new dated folder instead. The audit trail is append-only.
    - `SOKA-API/*` -> `@agent-soka-api-modifier`
    - `SokaLive-WebApp/*` -> `@agent-sokalive-webapp-modifier`
    - `SOKA-Web/*` -> `@agent-soka-web-editor`
-   For other repos, edit directly.
+     For other repos, edit directly.
 
 ### 0.2 Detect the active cycle (or start a new one)
 
@@ -117,6 +118,7 @@ ELSE:
 ```
 
 Always announce the chosen mode and cycle directory to the user, e.g.:
+
 - "NEW MODE — creating cycle `docs/dependency-upgrade/2026-04-29/`."
 - "RESUME MODE — cycle `2026-04-22/`, last snapshot `phase-3-after`, next is Phase 4."
 
@@ -152,15 +154,24 @@ when findings exist — that's expected, hence `|| true`.
 
 Parse `audit.json` and `outdated.json`. Bucket each package into one of:
 
-| Bucket | Criteria |
-|---|---|
-| **Phase 1 — Security** | Has CRITICAL or HIGH CVE; or transitively pulls one in. |
-| **Phase 2 — Minors / safe majors** | No CVE, current is one major behind, low integration surface (tooling, types, formatters). |
-| **Phase 3 — Framework majors** | Core framework jump (NestJS, Next.js, Vite, React, Angular) — coordinated multi-package release. |
-| **Phase 4 — Deferred majors** | High-risk majors (ORM, web3, test runner with config breaking changes) or schema-shared with other repos. |
+| Bucket                             | Criteria                                                                                                  |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| **Phase 1 — Security**             | Has CRITICAL or HIGH CVE; or transitively pulls one in.                                                   |
+| **Phase 2 — Minors / safe majors** | No CVE, current is one major behind, low integration surface (tooling, types, formatters).                |
+| **Phase 3 — Framework majors**     | Core framework jump (NestJS, Next.js, Vite, React, Angular) — coordinated multi-package release.          |
+| **Phase 4 — Deferred majors**      | High-risk majors (ORM, web3, test runner with config breaking changes) or schema-shared with other repos. |
 
 Cross-reference each finding with where it is used in source (`grep -rn "<pkg>"`).
 Capture critical integration points in `critical-files.md`.
+
+**Fan-out (≥8 outdated/audit findings):** the per-package cross-reference above is independent
+per package, so dispatch one **read-only** `general-purpose` investigator per package following the
+investigation variant in [../../references/subagent-fanout.md](../../references/subagent-fanout.md).
+Each greps `<pkg>` usage and fetches its migration/changelog notes (context7 for majors), returning
+a structured `{bucket recommendation, integration points, breaking-change notes}` — no writes. The
+orchestrator merges the reports, assigns final buckets, and authors `critical-files.md`. Below ~8
+findings, classify inline. This is investigation only: all of Phase 2 (install, lockfile writes,
+shared audit/build/test, the fail-fast gate) and SOKA subagent routing stay strictly sequential.
 
 See `references/workflow.md` § 2 for tie-breaker rules.
 
@@ -248,6 +259,7 @@ deviations from plan, and a link to the PR (left blank if not yet open).
 ### 2.5 Hand back to the user
 
 Print a concise summary:
+
 - Cycle directory + phase that just completed.
 - Vulnerability count delta (from snapshot diff).
 - Files changed.
@@ -294,16 +306,16 @@ snapshot **and** the user has merged the corresponding PRs. To close it:
 
 ## QUICK REFERENCE
 
-| Situation | Action |
-|---|---|
-| First run on a repo | NEW MODE -> create cycle dir for today -> baseline -> generate plan -> stop |
-| One cycle exists, mid-flight | RESUME MODE -> continue same cycle |
-| Cycle exists and is complete | Ask user; with `--new` create today's cycle |
-| Multiple incomplete cycles | Ambiguous -> ask user which to resume |
-| Last snapshot in cycle is `phase-N-after` | Next phase is `N+1` within same cycle |
-| Last snapshot in cycle is `phase-N-before` | Phase N is mid-flight, resume it |
-| Schema-shared package (Prisma, OpenAPI client) | Force-defer to Phase 4, add coordination note |
-| User pauses mid-phase | Leave snapshot dirs as-is, exit cleanly |
+| Situation                                      | Action                                                                      |
+| ---------------------------------------------- | --------------------------------------------------------------------------- |
+| First run on a repo                            | NEW MODE -> create cycle dir for today -> baseline -> generate plan -> stop |
+| One cycle exists, mid-flight                   | RESUME MODE -> continue same cycle                                          |
+| Cycle exists and is complete                   | Ask user; with `--new` create today's cycle                                 |
+| Multiple incomplete cycles                     | Ambiguous -> ask user which to resume                                       |
+| Last snapshot in cycle is `phase-N-after`      | Next phase is `N+1` within same cycle                                       |
+| Last snapshot in cycle is `phase-N-before`     | Phase N is mid-flight, resume it                                            |
+| Schema-shared package (Prisma, OpenAPI client) | Force-defer to Phase 4, add coordination note                               |
+| User pauses mid-phase                          | Leave snapshot dirs as-is, exit cleanly                                     |
 
 ---
 
