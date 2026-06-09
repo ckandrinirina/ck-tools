@@ -5,6 +5,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), [Semantic Vers
 
 ## [Unreleased]
 
+## [2.0.3] — 2026-06-09
+
+### Changed
+- **qa-validator**: pinned the agent to the `fast` (Haiku) tier so QA passes dispatched by `implement` (and other ck-tools skills) run on the cheapest model in their own context, keeping verbose test/lint output off the dispatching session.
+
 ## [2.0.2] — 2026-06-04
 
 ### Added
