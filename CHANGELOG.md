@@ -5,6 +5,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), [Semantic Vers
 
 ## [Unreleased]
 
+## [2.1.0] — 2026-06-12
+
+### Added
+- **showcase**: new skill that analyzes a product (ck-code architecture docs first, else README/manifests/codebase), builds a modern Astro presentation website themed after the app — hero, features, mobile/desktop/web platform sections, getting-started, and changelog — and guides deployment to a free host (GitHub Pages, Vercel, Netlify, Cloudflare Pages) or an existing server. No tech-stack section; publishes only with user approval.
+
 ## [2.0.3] — 2026-06-09
 
 ### Changed
