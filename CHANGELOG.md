@@ -5,6 +5,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), [Semantic Vers
 
 ## [Unreleased]
 
+## [2.1.1] — 2026-06-12
+
+### Changed
+- **showcase**: the generated site is now packaged as its own independent git repo + public GitHub repo (`<project>-showcase`), gitignored from the main project. Added a skill-managed `showcase.config.json` and site `README.md` recording the product snapshot, theme, sections, source commit, deploy target, and per-file checksums — making re-runs an intelligent UPDATE (diff project changes, refresh only affected sections, preserve manual edits) instead of a rebuild.
+
 ## [2.1.0] — 2026-06-12
 
 ### Added
