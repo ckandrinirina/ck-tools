@@ -10,6 +10,7 @@ issues, upgrading dependencies, preparing releases, and committing changes.
 
 | Skill | Purpose |
 |---|---|
+| [`bmad-guide`](./skills/bmad-guide/SKILL.md) | Read-only guide to the [BMAD Method](https://docs.bmad-method.org) install in the current project. Detects the installed version and invocation surface from `_bmad/` manifests, explains the flow as that version defines it, reads where the project actually sits from its artifacts and sprint status, and routes a task to the exact workflow to run next — then hands off. Manifest-driven rather than hardcoded, so it stays correct across BMAD releases; checks the web only when BMAD is missing, unrecognised, or you ask whether you are up to date. Never runs a BMAD workflow and never writes a file. |
 | [`deliver`](./skills/deliver/SKILL.md) | Commit staged or unstaged changes with a conventional-commit message and optionally open a pull request. Project-agnostic — no story or epic format required. |
 | [`dependency-upgrade`](./skills/dependency-upgrade/SKILL.md) | Phased, snapshot-tracked dependency upgrade. Each cycle is a self-contained dated folder so the same repo can run an upgrade every quarter or year with a permanent audit trail. Re-callable to resume an in-progress cycle. |
 | [`gh-issue`](./skills/gh-issue/SKILL.md) | Create a single GitHub Issue from free-text intent or a story file, with optional assignment to a GitHub Project. Mirrors `gh issue create` flag style. |
