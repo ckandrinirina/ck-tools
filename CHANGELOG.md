@@ -5,6 +5,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), [Semantic Vers
 
 ## [Unreleased]
 
+## [2.2.0] — 2026-07-24
+
+### Added
+- **bmad-guide**: new read-only skill that orients you in a project using the BMAD Method — detects the installed version and how it is invoked, explains the flow, reads where the project actually stands, and routes a task to the exact workflow to run next without executing it.
+
 ## [2.1.1] — 2026-06-12
 
 ### Changed
