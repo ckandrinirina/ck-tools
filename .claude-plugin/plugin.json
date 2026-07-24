@@ -3,7 +3,7 @@
   "name": "ck-tools",
   "displayName": "CK Tools",
   "description": "Optional toolkit of utility skills for Claude Code (dependency upgrades, audits, snapshots, and other repo-level chores). Designed to coexist with ck-code without overlapping its spec-driven workflow.",
-  "version": "2.1.1",
+  "version": "2.2.0",
   "author": {
     "name": "ckandrinirina",
     "email": "ckandrinirina@gmail.com"
@@ -11,6 +11,8 @@
   "homepage": "https://github.com/ckandrinirina/ck-tools",
   "repository": "https://github.com/ckandrinirina/ck-tools.git",
   "keywords": [
+    "bmad",
+    "bmad-method",
     "dependency-upgrade",
     "release",
     "changelog",
