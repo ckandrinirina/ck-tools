@@ -7,7 +7,6 @@ description: >
   "create a showcase site for my app", "build a landing page for my project",
   "publish a product website".
 argument-hint: "[optional product name or output directory]"
-disable-model-invocation: false
 ---
 
 # Showcase — Analyze a Product, Build a Presentation Website, Deploy It

@@ -2,7 +2,6 @@
 name: bmad-guide
 description: Use when the user asks how BMAD works, which BMAD workflow or agent to run next, what a BMAD term means, where they are in the BMAD flow, or whether BMAD is installed and current in this project. Also use when someone unfamiliar with BMAD lands in a BMAD-using repo and needs orientation.
 argument-hint: "[task or question]  # e.g. \"add a feature to an existing app\" or \"what is sprint planning\""
-disable-model-invocation: false
 ---
 
 # BMAD Guide — Orient, Explain, Route
