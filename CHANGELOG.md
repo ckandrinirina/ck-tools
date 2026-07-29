@@ -5,6 +5,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), [Semantic Vers
 
 ## [Unreleased]
 
+## [2.2.1] — 2026-07-29
+
+### Fixed
+- **native-commands**: `/fast` guidance no longer pinned to Opus 4.8 — it is available on Opus 5 and 4.x.
+- **hooks**: the auto-format hook also matches `MultiEdit` and `NotebookEdit` tool calls.
+
 ## [2.2.0] — 2026-07-24
 
 ### Added
