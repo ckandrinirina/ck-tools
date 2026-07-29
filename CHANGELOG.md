@@ -5,6 +5,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), [Semantic Vers
 
 ## [Unreleased]
 
+## [2.2.2] — 2026-07-29
+
+### Changed
+- **bmad-guide / deliver / showcase**: dropped the default-valued `disable-model-invocation: false` frontmatter line.
+
 ## [2.2.1] — 2026-07-29
 
 ### Fixed
