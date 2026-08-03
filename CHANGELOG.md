@@ -5,7 +5,19 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), [Semantic Vers
 
 ## [Unreleased]
 
-## [2.2.2] — 2026-07-29
+## [2.2.3] — 2026-08-03
+
+### Changed
+
+- **release-prep**: description rewritten to trigger conditions only (746 → 416 chars).
+  It was summarizing the workflow — the phases, the outputs, the resume behaviour — which
+  both overran the 500-char limit and made the skill harder to match against a real
+  request. The `never auto-commit, auto-push, or auto-tag` guarantee it stated is
+  unchanged; it was already a hard rule in the skill body.
+- **dependency-upgrade**: same fix (591 → 341 chars) — the dated-folder layout, phase
+  order, and risk matrix are workflow detail, not triggers.
+
+Both descriptions now pass `plugin-doctor.sh` with no warnings. No behaviour changes.
 
 ### Changed
 - **bmad-guide / deliver / showcase**: dropped the default-valued `disable-model-invocation: false` frontmatter line.
