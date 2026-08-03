@@ -1,14 +1,11 @@
 ---
 name: dependency-upgrade
 description: >
-  Use when planning or executing a dependency upgrade in a repo (npm/yarn/pnpm).
-  Each upgrade cycle is a dated folder under docs/dependency-upgrade/<YYYY-MM-DD>/
-  containing a phased plan (foundation -> security CVEs -> minors -> framework
-  majors -> deferred majors), per-phase verification checklists, a risk matrix,
-  and before/after snapshots. Re-callable: detects the most recent unfinished
-  cycle and resumes from the next phase. Triggers: "upgrade dependencies",
-  "fix vulnerabilities", "npm audit fix", CVE alerts, outdated majors,
-  framework migration prep, quarterly/yearly security sweep.
+  Use when planning or executing a dependency upgrade in a repo using npm,
+  yarn, or pnpm, or when resuming an upgrade cycle already in progress.
+  Triggers on "upgrade dependencies", "fix vulnerabilities", "npm audit fix",
+  CVE alerts, outdated majors, framework migration prep, and quarterly or
+  yearly security sweeps.
 argument-hint: "[repo-path] [--new]"
 disable-model-invocation: true
 ---

@@ -1,17 +1,12 @@
 ---
 name: release-prep
 description: >
-  Use to prepare a production release: diff a source branch against a target
-  branch (e.g. dev -> main), summarize PRs and commits in plain language for
-  non-developers, update CHANGELOG.md with PR links, bump the project version
-  file, and print an annotated git-tag command. Outputs a deployment
-  announcement in English by default (or any requested language). Project-
-  agnostic: detects package.json / pyproject.toml / Cargo.toml /
-  VERSION. Never auto-commits, auto-pushes, or auto-tags. Re-callable: detects
-  an in-flight release and resumes. Optionally opens a release PR with the
-  changelog section, file diff, and included PR list. Triggers: "prepare
-  release", "cut a release", "release notes", "bump version", "deploy to
-  prod", "tag a release".
+  Use when preparing a production release on any project — diffing a source
+  branch against a target branch, writing release notes or a CHANGELOG entry
+  for non-developers, bumping a version file, or opening a release PR.
+  Project-agnostic — detects package.json, pyproject.toml, Cargo.toml, or
+  VERSION. Triggers on "prepare release", "cut a release", "release notes",
+  "bump version", "deploy to prod", "tag a release".
 argument-hint: "[source-branch] [target-branch] [--lang=<code>] [--bump=<level>] [--prerelease=<id>] [--dry-run]"
 disable-model-invocation: true
 allowed-tools: Bash(git *) Bash(gh *) Bash(node *) Bash(jq *) Bash(grep *)
