@@ -5,6 +5,17 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), [Semantic Vers
 
 ## [Unreleased]
 
+## [2.2.4] — 2026-08-31
+
+### Added
+- **deliver / dependency-upgrade / implement / release-prep / showcase**: `effort:` frontmatter, so each skill runs at its own reasoning tier instead of inheriting the session's level.
+- **bmad-guide**: read-only tier matching ck-code's guide skills — `effort: low`, `model: haiku`, `context: fork`, `agent: Explore`, plus `allowed-tools` and `disallowed-tools`; a purely read-only orientation now costs a cheap model in a forked context.
+- **qa-validator**: `effort: low` and `experimental.cacheTtl: "1h"`, a new per-agent prompt-cache TTL that avoids re-caching the agent's system prompt on repeated dispatch.
+
+### Changed
+- **references/native-commands.md**: documents `/code-review`'s effort levels (`low`…`max`, `ultra`), its `/review` alias and `--comment`, `/effort`'s new per-model default, and `/loop`; the effort note now describes the `effort:` frontmatter every skill sets.
+
+
 ## [2.2.3] — 2026-08-03
 
 ### Changed
