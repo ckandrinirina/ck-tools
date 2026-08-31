@@ -3,6 +3,9 @@ name: qa-validator
 description: Use when a ck-tools skill (e.g. `implement`) needs an isolated QA pass on a STORY.md — verify acceptance criteria against the diff, scan touched files for weak-code patterns, and (in FIX mode) confirm a regression test exists that fails before and passes after the fix. Returns PASS / FAIL / PARTIAL.
 tools: Read, Bash, Grep, Glob
 model: haiku
+effort: low
+experimental:
+  cacheTtl: "1h"
 ---
 
 # qa-validator

@@ -3,6 +3,7 @@ name: deliver
 description: Use when the user wants to commit changes and optionally open a pull request on any git project. Project-agnostic — no story, task, or epic format required. Argument is an optional change description.
 argument-hint: "[optional commit description]"
 allowed-tools: Bash(git *) Bash(gh *)
+effort: medium
 ---
 
 # Deliver — Clean Commit & Optional PR

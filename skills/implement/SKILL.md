@@ -10,6 +10,7 @@ description: >
 argument-hint: "[task description] [--story <path>]"
 disable-model-invocation: true
 allowed-tools: Read, Write, Edit, Bash, Grep, Glob, Skill, Agent, AskUserQuestion, WebSearch, WebFetch, mcp__context7__resolve-library-id, mcp__context7__query-docs, mcp__plugin_context7_context7__resolve-library-id, mcp__plugin_context7_context7__query-docs
+effort: high
 ---
 
 # Implement — On-the-Go Story Implementation

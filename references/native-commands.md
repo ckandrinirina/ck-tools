@@ -28,10 +28,32 @@ cannot enable it for you.**
 | Small / mechanical: simple `implement` task, a focused `deliver` commit, a single `gh-issue` | ✅ **On** — deliberation not needed |
 | Big / complex: large refactor, framework-major `dependency-upgrade`, multi-PR `release-prep` | 🧠 **Off** — keep full reasoning |
 
-The skill-side lever that *is* automatic: `implement` already scales on `${CLAUDE_EFFORT}`.
+The skill-side lever that *is* automatic is `effort:` frontmatter — every ck-tools skill sets
+it (`low` for `bmad-guide`, `gh-issue`; `medium` for `deliver`, `release-prep`,
+`dependency-upgrade`; `high` for `implement`, `showcase`), and `implement` additionally scales
+on `${CLAUDE_EFFORT}`. `bmad-guide` also pins `model: haiku` with `context: fork`, so a
+read-only orientation costs a cheap model regardless of your session model. Neither lever can
+reach `/fast`, which is a serving path, not a model.
+
+## `/code-review` — the review pass before `deliver`
+
+`/code-review` (alias `/review`) reviews the current diff, or a PR by number, and takes an
+**effort level**: `low`/`medium` return fewer high-confidence findings, `high`/`max` widen
+coverage, and `ultra` runs a deep multi-agent review in the cloud. With no level it reuses the
+last one you typed. `--fix` applies findings to the working tree; `--comment` posts them inline
+on the PR.
+
+| ck-tools moment | Suggested call |
+|---|---|
+| before `deliver` opens a PR on a focused change | `/code-review low --fix` |
+| before `release-prep` cuts a production release | `/code-review high` |
+| a `dependency-upgrade` phase touching many files | `/code-review ultra` |
 
 ## Other native commands worth pairing
 
-- **`/code-review` / `/code-review --fix`** — deeper read-only diff review before `deliver` opens a PR; `--fix` applies findings.
 - **`/context`** — visual context-usage grid; run it before a long `implement` or `dependency-upgrade`.
 - **`/rewind`** — roll code+conversation back to a checkpoint before a risky change.
+- **`/effort`** — your baseline level, now saved **per model**. A skill's own `effort:`
+  frontmatter still overrides it for that turn.
+- **`/loop`** — re-run a prompt or slash command on an interval (or self-paced); useful for
+  watching a long `dependency-upgrade` cycle settle.

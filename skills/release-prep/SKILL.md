@@ -10,6 +10,7 @@ description: >
 argument-hint: "[source-branch] [target-branch] [--lang=<code>] [--bump=<level>] [--prerelease=<id>] [--dry-run]"
 disable-model-invocation: true
 allowed-tools: Bash(git *) Bash(gh *) Bash(node *) Bash(jq *) Bash(grep *)
+effort: medium
 ---
 
 # Release Prep

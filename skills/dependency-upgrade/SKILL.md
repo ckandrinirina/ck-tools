@@ -8,6 +8,7 @@ description: >
   yearly security sweeps.
 argument-hint: "[repo-path] [--new]"
 disable-model-invocation: true
+effort: medium
 ---
 
 # Dependency Upgrade — Phased, Snapshot-Tracked, Resumable
