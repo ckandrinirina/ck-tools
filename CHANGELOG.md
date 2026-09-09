@@ -5,6 +5,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), [Semantic Vers
 
 ## [Unreleased]
 
+## [2.3.0] — 2026-09-09
+
+### Added
+- **references/rtk.md** (new): RTK is an optional third-party `PreToolUse` hook that filters command output before it reaches context. Documents the command forms it recognizes, which commands it cannot help (`yarn`, `mvn`, `gradlew`, `npm install`), and the rule that a skill must never hardcode an `rtk` prefix.
+
+### Changed
+- **implement/references/detection.md**: the Node test command resolves to `npm run test` / `pnpm run test` rather than the `npm test` shorthand — exact aliases, but only the long form is filtered by RTK. `yarn test` is unchanged; RTK has no yarn filter.
+- **references/native-commands.md**: new RTK section linking the full contract.
+
 ## [2.2.4] — 2026-08-31
 
 ### Added
