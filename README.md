@@ -71,6 +71,7 @@ This keeps unrelated repos free of the toolkit's slash commands.
 
 - **`PostToolUse(Write|Edit)` hook** auto-formats files after edits (prettier / rustfmt / ruff / black / gofmt / shfmt; no-op when the formatter is absent) — `command`-type, zero model-token cost.
 - **`references/native-commands.md`** pairs built-in commands with ck-tools skills: `/goal` for autonomous verification loops, `/code-review --fix` before a `deliver` PR, and an intelligent `/fast` decision table (on for small tasks, off for large refactors). `/fast` is toggled by you — a plugin cannot enable it.
+- **`references/rtk.md`** — [RTK](https://github.com/ckandrinirina/rtk) is an optional third-party `PreToolUse` hook that filters command output before it reaches context. ck-tools writes the command forms it recognizes (`npm run test`, never the unfilterable `npm test` alias), never hardcodes an `rtk` prefix, and never requires the tool.
 
 ## Design principles
 
