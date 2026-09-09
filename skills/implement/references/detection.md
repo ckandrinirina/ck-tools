@@ -11,7 +11,7 @@ Detect the project type from manifest files at the repo root. **Stop at first hi
 | Manifest | Project type | Test command | Lint / typecheck commands (if config present) |
 |---|---|---|---|
 | `go.mod` | `go` | `go test ./...` | `golangci-lint run` (if `.golangci.yml`); `go vet ./...` |
-| `package.json` (with `"test"` script) | `node` | `npm test` (or `pnpm test` / `yarn test` if matching lockfile) | `npx tsc --noEmit` (if `tsconfig.json`); `npx eslint .` (if `.eslintrc*` / `eslint.config.*`) |
+| `package.json` (with `"test"` script) | `node` | `npm run test` (or `pnpm run test` / `yarn test` if matching lockfile) | `npx tsc --noEmit` (if `tsconfig.json`); `npx eslint .` (if `.eslintrc*` / `eslint.config.*`) |
 | `pyproject.toml` (mentions `pytest`) | `python` | `pytest` | `ruff check .` (if `ruff` config); `mypy .` (if `mypy.ini` / `[tool.mypy]`) |
 | `pyproject.toml` (no pytest mention) | `python` | `python -m unittest discover` | same lint/typecheck row as above |
 | `Cargo.toml` | `rust` | `cargo test` | `cargo clippy --all-targets` |
@@ -21,9 +21,13 @@ Detect the project type from manifest files at the repo root. **Stop at first hi
 | (none of the above) | `unknown` | — | — |
 
 **Lockfile→package-manager hints (node only):**
-- `pnpm-lock.yaml` present → `pnpm test`
+- `pnpm-lock.yaml` present → `pnpm run test`
 - `yarn.lock` present → `yarn test`
-- `package-lock.json` only → `npm test`
+- `package-lock.json` only → `npm run test`
+
+Always the `<runner> run <script>` long form, never the `npm test` shorthand: exact aliases,
+but only the long form is filtered when the user runs RTK ([rtk.md](../../../references/rtk.md)).
+`yarn` has no RTK filter, so it stays as written.
 
 If multiple manifests are present (e.g., a polyrepo), run only the one whose subtree contains the touched files.
 
