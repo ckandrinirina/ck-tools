@@ -60,6 +60,7 @@ This keeps unrelated repos free of the toolkit's slash commands.
 
 | Command | What it does |
 |---|---|
+| `/ck-tools:bmad-guide` | Explain how BMAD works, which BMAD workflow or agent to run next, what a BMAD term means, where you are in the BMAD flow, or whether BMAD is installed and current. Accepts an optional task or question. |
 | `/ck-tools:deliver` | Commit changes with a conventional-commit message and optionally open a PR. Accepts an optional change description. |
 | `/ck-tools:dependency-upgrade` | Start or resume a dependency-upgrade cycle in the current repo (or `[repo-path]`). Use `--new` to force-start a fresh cycle even if one is open. |
 | `/ck-tools:gh-issue` | Create a GitHub Issue from a description or `--story <path>`. Flags: `--project <number>`, `--label <name>`, `--assignee <user>`. |

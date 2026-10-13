@@ -14,11 +14,12 @@ source of truth. Read in this order, stopping when you have enough:
 | `docs/architecture/tech-stack.md` | Platforms in use (read for platform detection only — **do not** put a tech-stack section on the site) |
 | `docs/architecture/_shared.md` | Cross-cutting concepts, naming, domain language |
 | `docs/architecture/features/<slug>/index.md` | One feature each — title + summary → a feature card |
-| `tasks/FEATURE_INDEX.md` | Authoritative feature list with one-line descriptions and status (DONE/IN PROGRESS/TODO) |
+| `tasks/EPICS_INDEX.md` | ck-code v7 (gitignored, generated — run `ck-index` first when available): one row per epic, `Epic \| Plan \| Status \| Stories \| Docs \| Description`, status `MERGED`/`DONE`/`IN PROGRESS`/`TODO` |
+| `tasks/FEATURE_INDEX.md` | Pre-v7 fallback when `EPICS_INDEX.md` is absent: feature list with one-line descriptions and status (DONE/IN PROGRESS/TODO) |
 
-Feature cards come from `FEATURE_INDEX.md` descriptions + each feature's
-`index.md`. Use status to optionally mark "Coming soon" on TODO/IN-PROGRESS
-features. Recency check: `git log -1 --format=%cr -- docs/architecture/`; treat
+Feature cards come from the index's descriptions (`EPICS_INDEX.md`, else
+`FEATURE_INDEX.md`) + each feature's `index.md`. Use status to optionally mark
+"Coming soon" on TODO/IN-PROGRESS features; with neither index, mark no status. Recency check: `git log -1 --format=%cr -- docs/architecture/`; treat
 docs older than ~90 days with no recent commits as stale and cross-check the code.
 
 ## Fallback — manifests by ecosystem

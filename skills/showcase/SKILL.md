@@ -68,13 +68,15 @@ Follow `references/analysis.md`. Goal: produce one **Product Profile** object.
 ### 1.1 Detect ck-code architecture docs
 
 ```bash
-ls docs/architecture/ tasks/FEATURE_INDEX.md 2>/dev/null
+command -v ck-index >/dev/null && ck-index >/dev/null 2>&1   # ck-code v7: regenerate the gitignored view
+ls docs/architecture/ tasks/EPICS_INDEX.md tasks/FEATURE_INDEX.md 2>/dev/null
 ```
 
 - **Present** → check recency with `git log -1 --format=%cr -- docs/architecture/`.
   Read the canonical docs in this order: `docs/architecture/README.md`,
   `tech-stack.md`, `_shared.md`, each `features/<slug>/index.md`, and
-  `tasks/FEATURE_INDEX.md` (feature names + one-line descriptions). These are the
+  `tasks/EPICS_INDEX.md` (ck-code v7 — one row per epic: name, status, one-line
+  description), else the pre-v7 `tasks/FEATURE_INDEX.md`, else no status. These are the
   primary source of truth for features and platforms.
 - **Absent or stale (>90 days, no recent commits)** → go to 1.2.
 

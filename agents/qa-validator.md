@@ -21,6 +21,7 @@ The dispatching skill passes these via the agent prompt:
 - `files_touched` — list of absolute paths modified in the run
 - `test_command` — the test command run by the dispatcher in its regression phase, or `none`
 - `test_result` — `PASS`, `FAIL`, or `NOT_RUN`
+- `detection_ref` — absolute path to the dispatching skill's `references/detection.md` (its §4 holds the weak-code patterns)
 
 ## Outputs
 
@@ -37,7 +38,7 @@ Each verdict is followed by a rationale of ≤ 200 words. For `FIX` mode, also c
 1. **Read the story** at `story_path`. Extract Mode, Acceptance Criteria, Implementation Plan, Files Touched.
 2. **If `test_result` is `FAIL`:** verdict is immediately `FAIL`. Reason: failing test names from the latest test output (re-run `test_command` once if the dispatcher did not capture names). Stop.
 3. **Acceptance criteria coverage:** for each `- [ ]` or `- [x]` criterion, locate at least one file in `files_touched` whose diff plausibly addresses it. Use `Grep` against the touched files to confirm the relevant symbols exist. Mark each criterion `COVERED` or `UNCOVERED`. Any `UNCOVERED` → `FAIL`.
-4. **Weak-code scan:** Grep each file in `files_touched` against the patterns in the dispatching skill's `references/detection.md` §4. Limit findings to top 5 by severity:
+4. **Weak-code scan:** Grep each file in `files_touched` against the patterns in §4 of the file at `detection_ref` — `Read` that path; never guess it. No `detection_ref` given → skip this step and say so in the rationale. Limit findings to top 5 by severity:
    - `critical` (hard-coded credentials) → `FAIL`
    - `high` (`panic(`, `.unwrap()`, empty `catch`) in non-test code → contributes to `PARTIAL`
    - `medium` (`TODO`, `FIXME` in newly written lines) → contributes to `PARTIAL`

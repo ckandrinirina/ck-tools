@@ -222,6 +222,7 @@ mode:          <FEATURE | FIX | REFACTOR>
 files_touched: <list of absolute paths from Files Touched>
 test_command:  <command run in Phase 4, or "none">
 test_result:   <PASS | FAIL | NOT_RUN>
+detection_ref: <this skill's base directory>/references/detection.md, as an absolute path
 ```
 
 The agent returns a verdict:

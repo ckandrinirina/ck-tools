@@ -192,7 +192,7 @@ Add one next-step suggestion:
 - **Never invent labels, assignees, or project numbers** — verify each via
   `gh label list`, `gh api users/<user>`, or `gh project list` first.
 - **Never create more than one issue per invocation.** For batch creation
-  from `tasks/`, the user wants `/ck-code:to-issues` instead.
+  from `tasks/`, the user wants `/ck-code:plan --publish` instead.
 - **Never add AI references** to the title, body, comments, or any project
   metadata. The CRITICAL RULE at the top is absolute.
 - **Never call `gh issue create` or `gh project item-add` without an explicit
