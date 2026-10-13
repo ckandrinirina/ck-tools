@@ -5,6 +5,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), [Semantic Vers
 
 ## [Unreleased]
 
+## [2.3.1] — 2026-10-13
+
+### Fixed
+- **showcase**: reads ck-code v7's `tasks/EPICS_INDEX.md` (regenerating it with `ck-index` when available), falling back to the pre-v7 `FEATURE_INDEX.md` — feature status and "Coming soon" marks work again on current projects.
+- **implement / qa-validator**: the dispatch now passes the absolute `detection.md` path, so the weak-code scan (including the hard-coded-credentials FAIL) runs instead of being skipped or improvised.
+- **gh-issue**: batch creation points to `/ck-code:plan --publish`, not the retired `/ck-code:to-issues`.
+- **README**: the slash-command table lists `/ck-tools:bmad-guide`.
+
 ## [2.3.0] — 2026-09-09
 
 ### Added
