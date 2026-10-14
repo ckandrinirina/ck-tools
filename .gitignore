@@ -5,3 +5,7 @@ node_modules/
 .env.local
 .idea/
 .vscode/
+
+# Written by Claude Code beside the mod when it loads from --plugin-dir (type declarations)
+/.claude-plugin/types/
+/tsconfig.json

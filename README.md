@@ -54,7 +54,9 @@ in `.claude/settings.json`:
 }
 ```
 
-This keeps unrelated repos free of the toolkit's slash commands.
+This keeps unrelated repos free of the toolkit's slash commands. To get the
+[plan-limit band](#plan-limit-band) in every session, enable it in `~/.claude/settings.json`
+instead.
 
 ## Slash commands
 
@@ -67,6 +69,44 @@ This keeps unrelated repos free of the toolkit's slash commands.
 | `/ck-tools:implement` | Implement a feature, fix, or refactor in the current repo. Accepts a free-text task description and optional `--story <path>` to resume from an existing story file. |
 | `/ck-tools:release-prep` | Prepare a release from `[source-branch]` -> `[target-branch]` (defaults `dev` -> `main`). Updates `CHANGELOG.md`, bumps the version file, prints an annotated `git tag` command and a deployment announcement. Flags: `--lang=<code>`, `--bump=<level>`, `--prerelease=<id>`, `--dry-run`. |
 | `/ck-tools:showcase` | Analyze a product and build a modern Astro presentation website themed after the app (hero, features, platform sections, getting-started, changelog), package it as an independent gitignored GitHub repo with a saved config, then guide free deployment. Re-run to intelligently update the site from project changes. Accepts an optional product name or output directory. |
+
+## Plan-limit band
+
+A mod (in-process hooks module, `hooks/mod/`) draws your Claude plan limits above the prompt:
+how much of the 5-hour and weekly windows you have used, whether your pace is safe or will run
+out before the reset, and when each window resets.
+
+```
+5h ██░░░░░░ 20% ✓ safe · ~49% at reset · resets 2h57m     7d █████░░░ 61% ✓ safe · ~71% at reset · resets 22h57m
+```
+
+| Verdict | Means |
+|---|---|
+| `✓ safe · ~49% at reset` | At the pace so far, the window ends under 85% |
+| `⚠ tight · ~96% at reset` | It ends between 85% and 100% |
+| `✗ out in 1h30m` | It runs out before the reset, in that long |
+| `✗ limit hit` | The window is used up |
+| `✓ too early to tell` | Under 5% of the window has passed and use is under 50% |
+
+**Pace** is use divided by the share of the window that has passed: 40% used one hour into a
+5-hour window projects to 200%, and runs out in 1h30m. Each window also toasts once per
+threshold (80% and 95% by default) and once when the pace will run it out before the reset,
+de-duplicated across every session on the machine.
+
+- **Everywhere**: the band shows wherever ck-tools is enabled. To see it in every session, enable
+  ck-tools in `~/.claude/settings.json` instead of per project. ck-code's and ck-code-lite's
+  bands draw under it.
+- **Commands**, with no model turn: `/usage-pace` prints the full report; `/usage-band` hides or
+  shows the band, remembered across sessions.
+- **Settings** (`/plugin` → ck-tools → configure): `usage_band` and `usage_alerts` turn the band
+  and the toasts off; `usage_alert_at` sets the thresholds (`80,95`).
+- **Figures**: the plan-limit readings the status line gets, on a claude.ai Pro or Max plan, after
+  the first response of a session. The last reading is kept in the plugin store, so a new session
+  draws it at once, marked `(as of 12m ago)`. Off a subscription the band stays empty.
+
+Needs Claude Code 2.1.287 or later (mods); tested with 2.1.299. Under `--bare`, `--safe-mode` or
+`disableAllHooks` the band is simply absent. `claude plugin validate .` and
+`claude plugin test .` check it offline (`tests/mod/`), and CI runs both.
 
 ## Native Claude Code integration
 
