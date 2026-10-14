@@ -5,6 +5,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), [Semantic Vers
 
 ## [Unreleased]
 
+## [2.4.0] — 2026-10-14
+
+### Added
+- **mod** (new, `hooks/mod/`): a band above the prompt with the 5-hour and weekly plan limits: a bar, the share used, a pace verdict (`✓ safe`, `⚠ tight`, `✗ out in 1h30m`, `✗ limit hit`) and the time to each reset. One row, or one row per window in a narrow band; the other mods' bands (ck-code, ck-code-lite) draw under it.
+- **mod**: toasts once per window at each threshold (`usage_alert_at`, 80% and 95% by default) and once when the pace runs the window out before its reset, de-duplicated across sessions.
+- **mod**: the last reading is kept in the plugin store, so a new session draws the band at once, marked with its age.
+- **commands**: `/usage-pace` (the full report) and `/usage-band` (hide or show), both with no model turn.
+- **settings**: `usage_band`, `usage_alerts`, `usage_alert_at`.
+- **tests**: `tests/mod/` (18 offline tests, `claude plugin test`), run in the new CI workflow.
+
 ## [2.3.1] — 2026-10-13
 
 ### Fixed
