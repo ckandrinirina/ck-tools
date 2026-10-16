@@ -1,13 +1,12 @@
 ---
 name: gh-issue
 description: >
-  Use when the user wants to create a single GitHub Issue and optionally add
-  it to a GitHub Project. Project-agnostic — accepts free-text intent or a
-  story file via `--story <path>` (from ck-code or ck-tools `implement`).
-  Triggers: "create issue", "open GitHub issue", "track this in GitHub",
-  "file an issue", "add to project board".
+  Use only when the user explicitly asks to create a single GitHub Issue
+  (optionally added to a GitHub Project), or when `implement` hands off to it.
+  Never run it speculatively. Accepts free-text intent or a story file via
+  `--story <path>`. Triggers: "create issue", "open GitHub issue", "file an
+  issue", "add to project board".
 argument-hint: "[title-or-description] [--story <path>] [--project <number>] [--label <name>] [--assignee <user>]"
-disable-model-invocation: true
 allowed-tools: Read, Bash(git *), Bash(gh *), AskUserQuestion
 effort: low
 ---
