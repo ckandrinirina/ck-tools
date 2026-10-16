@@ -75,8 +75,7 @@ async function record(
   let changed = false;
   for (const r of snapshot.readings) {
     const out = alertsFor(pace(r, t), r, thresholds, seen[r.kind]);
-    for (const text of out.toasts)
-      $.ui.toast(text, { timeoutMs: 8000 });
+    for (const text of out.toasts) $.ui.toast(text, { timeoutMs: 8000 });
     if (JSON.stringify(out.next) !== JSON.stringify(seen[r.kind])) {
       after[r.kind] = out.next;
       changed = true;
@@ -94,27 +93,35 @@ export const register: Register = (on, options) => {
   registerUpdateCheck(on);
 
   on("session.start", async ($, e, next) => {
-    await startUpdateCheck($, updateOn);
-    await load($);
     try {
-      const first = await $.session.usage();
-      await record($, first.rateLimits);
+      await startUpdateCheck($, updateOn);
     } catch {
-      // No reading yet: the saved one stands until session.measure brings one.
+      // The update check is independent of the usage band: its failure must not hide the band.
     }
-    // The reset countdown moves by the minute; nothing else does between readings.
-    $.clock.every(60_000, () => void tick($));
-    await $.command.register({
-      name: "usage-pace",
-      description:
-        "5-hour and weekly plan limits: use, pace and reset times, with no model turn",
-      immediate: true,
-    });
-    await $.command.register({
-      name: "usage-band",
-      description: "Show or hide the plan-limit band above the prompt",
-      immediate: true,
-    });
+    try {
+      await load($);
+      try {
+        const first = await $.session.usage();
+        await record($, first.rateLimits);
+      } catch {
+        // No reading yet: the saved one stands until session.measure brings one.
+      }
+      // The reset countdown moves by the minute; nothing else does between readings.
+      $.clock.every(60_000, () => void tick($));
+      await $.command.register({
+        name: "usage-pace",
+        description:
+          "5-hour and weekly plan limits: use, pace and reset times, with no model turn",
+        immediate: true,
+      });
+      await $.command.register({
+        name: "usage-band",
+        description: "Show or hide the plan-limit band above the prompt",
+        immediate: true,
+      });
+    } catch {
+      // Nothing here is load-bearing: a failed store or command call must not stop the session.
+    }
     return next(e);
   });
 
@@ -128,7 +135,11 @@ export const register: Register = (on, options) => {
   ).catch(($, e, next) => next(e));
 
   on("session.measure", async ($, e, next) => {
-    if (e.changed.includes("rateLimits")) await record($, e.rateLimits);
+    try {
+      if (e.changed.includes("rateLimits")) await record($, e.rateLimits);
+    } catch {
+      // A failed store or toast must not stop the measure chain.
+    }
     return next(e);
   });
 
