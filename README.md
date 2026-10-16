@@ -99,7 +99,14 @@ de-duplicated across every session on the machine.
 - **Commands**, with no model turn: `/usage-pace` prints the full report; `/usage-band` hides or
   shows the band, remembered across sessions.
 - **Settings** (`/plugin` → ck-tools → configure): `usage_band` and `usage_alerts` turn the band
-  and the toasts off; `usage_alert_at` sets the thresholds (`80,95`).
+  and the toasts off; `usage_alert_at` sets the thresholds (`80,95`); `update_check` turns off the
+  update check below.
+- **Update check**: when the marketplace serves a newer ck-tools than the one loaded, one toast per
+  new version and a row above the band until you update
+  (`▸ ck-tools 2.5.0 is out (you have 2.3.0) · /plugin update ck-tools@ck-marketplace, then restart`).
+  Checked at most every 6 hours, never for a `--plugin-dir` checkout, never under
+  `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` or `CK_UPDATE_CHECK=off`. ck-code and ck-code-lite
+  check themselves the same way.
 - **Figures**: the plan-limit readings the status line gets, on a claude.ai Pro or Max plan, after
   the first response of a session. The last reading is kept in the plugin store, so a new session
   draws it at once, marked `(as of 12m ago)`. Off a subscription the band stays empty.
