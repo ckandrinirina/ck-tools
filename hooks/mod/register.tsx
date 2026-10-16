@@ -15,6 +15,7 @@ import { atom, read, update } from "claude-code";
 import type { EngineInterface, Register } from "claude-code";
 
 import type { Alerted, Reading, Snapshot } from "./logic";
+import { registerUpdateCheck, startUpdateCheck } from "./update";
 import {
   ageText,
   alertsFor,
@@ -34,6 +35,7 @@ const usage = atom({ plugin: "ck-tools", key: "usage" } as const, null);
 const now = atom({ plugin: "ck-tools", key: "now" } as const, 0);
 const hidden = atom({ plugin: "ck-tools", key: "hidden" } as const, false);
 
+let updateOn = true;
 let bandOn = true;
 let alertsOn = true;
 let thresholds: number[] = [80, 95];
@@ -88,8 +90,11 @@ export const register: Register = (on, options) => {
   alertsOn = options.usage_alerts !== false;
   const parsed = parseThresholds(options.usage_alert_at);
   thresholds = parsed.length ? parsed : [80, 95];
+  updateOn = options.update_check !== false;
+  registerUpdateCheck(on);
 
   on("session.start", async ($, e, next) => {
+    await startUpdateCheck($, updateOn);
     await load($);
     try {
       const first = await $.session.usage();

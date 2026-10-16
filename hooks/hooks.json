@@ -1,5 +1,5 @@
 {
-  "description": "ck-tools hooks: the formatter after edits, and the mod (hooks module) for the plan-limit band, its toasts and the zero-model /usage-pace and /usage-band",
+  "description": "ck-tools hooks: the formatter after edits, and the mod (hooks module) for the plan-limit band, its toasts, the update check and the zero-model /usage-pace and /usage-band",
   "modules": [
     "./mod/register.tsx"
   ],

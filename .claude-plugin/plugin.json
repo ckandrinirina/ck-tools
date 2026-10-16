@@ -42,6 +42,12 @@
       "title": "Plan-limit toast thresholds",
       "description": "Comma-separated percentages that each toast once per window, such as 80,95.",
       "default": "80,95"
+    },
+    "update_check": {
+      "type": "boolean",
+      "title": "Update check",
+      "description": "Toast once and show a row above the prompt when the marketplace serves a newer version of this plugin.",
+      "default": true
     }
   }
 }
