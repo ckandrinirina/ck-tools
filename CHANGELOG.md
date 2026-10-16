@@ -5,6 +5,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), [Semantic Vers
 
 ## [Unreleased]
 
+## [2.5.1] — 2026-10-16
+
+### Fixed
+- **format hook**: `scripts/format.sh` now matches ck-code's gated formatter — files outside the project are never touched, and prettier, ruff/black and shfmt run only when the project has their config; before, any installed prettier reflowed Markdown and YAML in every repo (and rewrote inline code spans).
+- **gh-issue**: `disable-model-invocation` dropped — `implement` hands off to it through the Skill tool, which the flag silently blocked, so answering Yes created no issue. The description now limits it to explicit requests and that hand-off.
+- **mod**: the `session.start` and `session.measure` handlers swallow a failed store, toast or command call and always continue the chain; a failed update check no longer hides the usage band.
+- **mod**: a failed update check (offline, non-ok, malformed reply) is recorded and waits 6 hours like a success, instead of refetching at every session start.
+
 ## [2.5.0] — 2026-10-16
 
 ### Added
