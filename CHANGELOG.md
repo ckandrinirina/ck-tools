@@ -5,6 +5,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), [Semantic Vers
 
 ## [Unreleased]
 
+## [2.6.0] — 2026-10-22
+
+### Added
+- **review-guide**: guides a human through a pull request, branch or diff too large to review in one pass — a one-screen map that tiers every file (read closely, skim, skip), then small dependency-ordered steps with intent, what to check and self-check questions; progress and notes resume across sessions from the git directory, and notes post to the PR only on an explicit yes.
+- **understand**: explains a file, codebase, spec, diff, error, config, command or concept as a step-by-step guide (TL;DR, map, walkthrough with `file:line` references, pitfalls, self-check questions) in the user's language, with `--quick`/`--deep` depth.
+
 ## [2.5.1] — 2026-10-16
 
 ### Fixed
