@@ -5,6 +5,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), [Semantic Vers
 
 ## [Unreleased]
 
+## [2.7.0] — 2026-10-28
+
+### Added
+- **disk-clean**: measures what dev work leaves on the disk — finished worktrees and kept worktrees' build output across your repos, Docker containers of removed checkouts, unused images and build cache, anonymous volumes, the Colima VM disk (`fstrim`), ck-qa logs, outdated Playwright browsers, unused plugin versions, npm/npx, pnpm, yarn, Homebrew, pip and uv caches — and frees only the categories you pick, through the new `ck-disk` script. Named Docker volumes, unmerged or in-use worktrees and the main checkout's build output are never touched as a group.
+
 ## [2.6.0] — 2026-10-22
 
 ### Added
