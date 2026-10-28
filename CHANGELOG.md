@@ -5,6 +5,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), [Semantic Vers
 
 ## [Unreleased]
 
+## [2.7.1] — 2026-10-28
+
+### Fixed
+- **disk-clean**: `ck-disk` runs git on scanned repositories with `core.fsmonitor`, hooks and the untracked cache switched off, so a cloned repository's config can never run a command during a scan; `qa-logs` deletes files through `find` itself, never by piping paths to `rm -rf`.
+
 ## [2.7.0] — 2026-10-28
 
 ### Added
