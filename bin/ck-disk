@@ -1,0 +1,435 @@
+#!/usr/bin/env bash
+# ck-disk — find and free the disk that dev work quietly fills: finished worktrees, Docker
+# leftovers, test logs and package-manager caches.
+#
+# Usage:
+#   ck-disk scan [--root <dir>]…     one row per category that holds anything:
+#                                    <key> <size> <items> — <what>; then its detail lines
+#   ck-disk clean <key>… [--root <dir>]…
+#                                    frees exactly the named categories, one line each
+#
+# Roots are where git repositories are looked for (depth ≤ 3); default: CK_DISK_ROOTS
+# (colon-separated), else ~/Dev ~/dev ~/Projects ~/projects ~/code ~/src ~/work, plus the
+# current repository. Every category removes only what can be rebuilt or downloaded again,
+# or what a removed checkout owned. A worktree with uncommitted or unmerged work, or locked
+# by a live process, is reported and never touched; named Docker volumes and the main
+# checkout's build output are only cleaned when their own key is passed.
+# bash 3.2 compatible.
+
+set -uo pipefail
+
+die() { echo "ck-disk: ERROR — $*" >&2; exit 2; }
+NL='
+'
+US="$(printf '\037')"
+BUILD_NAMES="target node_modules dist build out .next .nuxt .svelte-kit .turbo .parcel-cache .angular coverage .gradle .venv venv __pycache__ .pytest_cache .mypy_cache .ruff_cache DerivedData"
+TMPD="${TMPDIR:-/tmp}"; TMPD="${TMPD%/}"
+
+kb_of() { [ $# -gt 0 ] || { echo 0; return; }; du -sk "$@" 2>/dev/null | awk '{s+=$1} END{print s+0}'; }
+human() { awk -v k="${1:-0}" 'BEGIN{ if (k >= 1048576) printf "%.1f GB", k/1048576; else if (k >= 1024) printf "%d MB", k/1024; else printf "%d KB", k }'; }
+has() { command -v "$1" >/dev/null 2>&1; }
+under() { case "$1/" in "$2"/*) return 0 ;; esac; return 1; }
+
+ROOTS=""
+RIDS=""
+# A root is kept once: on a case-insensitive disk ~/dev and ~/Dev are one folder, told
+# apart by device and inode, never by spelling.
+add_root() { local r id; r="$(CDPATH='' cd -- "$1" 2>/dev/null && pwd -P)" || return 0
+  id="$(stat -f '%d:%i' "$r" 2>/dev/null || stat -c '%d:%i' "$r" 2>/dev/null)"
+  case "$NL$RIDS$NL" in *"$NL$id$NL"*) return 0 ;; esac
+  RIDS="$RIDS${RIDS:+$NL}$id"; ROOTS="$ROOTS${ROOTS:+$NL}$r"; }
+
+# ---- repositories and their linked worktrees -------------------------------------------
+
+repos() {  # each main checkout under the roots, plus the current one
+  local r g
+  g="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" && dirname -- "$g"
+  printf '%s\n' "$ROOTS" | while IFS= read -r r; do
+    [ -n "$r" ] && find "$r" -maxdepth 3 -name .git -type d -prune 2>/dev/null | while IFS= read -r g; do dirname -- "$g"; done
+  done
+}
+
+# The ref a finished branch has landed in: the main checkout's branch, else the default.
+landed_in() {  # repo sha → 0 when sha is contained in one of them
+  local ref
+  for ref in HEAD refs/remotes/origin/HEAD main master develop; do
+    git -C "$1" rev-parse -q --verify "$ref^{commit}" >/dev/null 2>&1 || continue
+    git -C "$1" merge-base --is-ancestor "$2" "$ref" 2>/dev/null && return 0
+  done
+  return 1
+}
+
+# One row per linked worktree: path, branch, state (done | why it is kept). The first entry
+# git lists is the main checkout, never a row — whatever spelling its path was reached by.
+worktrees() {
+  local repo
+  repos | sort -u | while IFS= read -r repo; do
+    [ -d "$repo" ] || continue
+    { git -C "$repo" worktree list --porcelain 2>/dev/null; echo; } | awk 'm { print; next } $0 == "" { m = 1 }'
+  done | wt_rows | sort -u
+}
+
+wt_rows() {  # porcelain blocks of linked worktrees → rows
+  local wt="" br="" lk="" sha="" pid why line repo
+    while IFS= read -r line; do
+      case "$line" in
+        "worktree "*) wt="${line#worktree }" ;;
+        "HEAD "*) sha="${line#HEAD }" ;;
+        "branch "*) br="${line#branch refs/heads/}" ;;
+        locked*) lk="${line#locked}"; lk="${lk# }"; [ -n "$lk" ] || lk="locked" ;;
+        "")
+          if [ -n "$wt" ] && [ -d "$wt" ]; then
+            repo="$(git -C "$wt" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)"
+            repo="$(dirname -- "$repo")"
+            # belt and braces: a checkout whose git dir is the common dir is a main one
+            [ "$(git -C "$wt" rev-parse --absolute-git-dir 2>/dev/null)" != "$repo/.git" ] || { wt=""; continue; }
+            why=""
+            if [ -n "$lk" ]; then
+              pid="$(printf '%s' "$lk" | sed -n 's/.*(pid \([0-9][0-9]*\).*/\1/p')"
+              if [ -z "$pid" ] || kill -0 "$pid" 2>/dev/null; then why="locked by a live process"; fi
+            fi
+            [ -n "$why" ] || [ -z "$(git -C "$wt" status --porcelain 2>/dev/null | head -1)" ] || why="uncommitted changes"
+            [ -n "$why" ] || landed_in "$repo" "$sha" || why="unmerged commits"
+            printf '%s%s%s%s%s\n' "$wt" "$US" "$br" "$US" "${why:-done}"
+          fi
+          wt=""; br=""; lk=""; sha="" ;;
+      esac
+    done
+}
+
+build_dirs() {  # gitignored build-output dirs under checkout $1 that hold no tracked file
+  local root="$1" expr="" n d
+  for n in $BUILD_NAMES; do expr="$expr${expr:+ -o} -name $n"; done
+  # shellcheck disable=SC2086  # $expr is the word-split -name list
+  find "$root" -mindepth 1 -maxdepth 4 -name .git -prune -o -type d \( $expr \) -prune -print 2>/dev/null \
+    | while IFS= read -r d; do
+        git -C "$root" check-ignore -q "$d" 2>/dev/null || continue
+        [ -z "$(git -C "$root" ls-files -- "$d" 2>/dev/null | head -1)" ] || continue
+        printf '%s\n' "$d"
+      done
+}
+
+# ---- Docker ------------------------------------------------------------------------------
+
+DK=""
+dk_up() {  # 0 when a daemon answers within 5 s
+  local p i=0
+  [ -z "$DK" ] || { [ "$DK" = 1 ]; return; }
+  DK=0; has docker || return 1
+  docker version --format '{{.Server.Version}}' >/dev/null 2>&1 &
+  p=$!
+  while kill -0 "$p" 2>/dev/null; do
+    [ "$i" -lt 25 ] || { kill "$p" 2>/dev/null; return 1; }
+    sleep 0.2; i=$((i + 1))
+  done
+  wait "$p" && DK=1
+  [ "$DK" = 1 ]
+}
+
+# Containers whose compose working dir no longer exists: a removed checkout's. Rows:
+# id, state, project, name, working dir.
+dk_orphans() {
+  local id st wd pj nm
+  docker ps -a --no-trunc --format "{{.ID}}$US{{.State}}$US{{.Label \"com.docker.compose.project.working_dir\"}}$US{{.Label \"com.docker.compose.project\"}}$US{{.Names}}" 2>/dev/null \
+    | while IFS="$US" read -r id st wd pj nm; do
+        [ -n "$wd" ] && [ ! -d "$wd" ] && printf '%s%s%s%s%s%s%s%s%s\n' "$id" "$US" "$st" "$US" "$pj" "$US" "$nm" "$US" "$wd"
+      done
+}
+
+# Dangling volumes, one per line: name, compose project ("" for none).
+dk_dangling() { docker volume ls -f dangling=true --format "{{.Name}}$US{{.Label \"com.docker.compose.project\"}}" 2>/dev/null; }
+is_anon() { case "$1" in *[!0-9a-f]*) return 1 ;; esac; [ "${#1}" -eq 64 ]; }
+
+# "<reclaimable> " of a `docker system df` row (Images, Build Cache, Local Volumes), as KB
+dk_df_kb() {
+  docker system df --format '{{.Type}}|{{.Reclaimable}}' 2>/dev/null | awk -F'|' -v t="$1" '$1 == t {
+    split($2, a, " "); v = a[1]; u = v; gsub(/[0-9.]/, "", u); gsub(/[^0-9.]/, "", v)
+    m = (u == "GB") ? 1048576 : (u == "MB") ? 1024 : (u == "kB" || u == "KB") ? 1 : (u == "TB") ? 1073741824 : 0
+    printf "%d", v * m }'
+}
+
+vm_disk() {  # path of a Colima VM's disk image dir, when there is one
+  local d
+  for d in "$HOME/.colima/_lima/_disks" "$HOME/.colima/_lima/colima"; do [ -d "$d" ] && { echo "$d"; return; }; done
+}
+
+# ---- caches ------------------------------------------------------------------------------
+
+pw_dir() { local d; for d in "${PLAYWRIGHT_BROWSERS_PATH:-}" "$HOME/Library/Caches/ms-playwright" "$HOME/.cache/ms-playwright"; do [ -n "$d" ] && [ -d "$d" ] && { echo "$d"; return; }; done; }
+pw_old() {  # browser revisions below the newest of their kind
+  local d; d="$(pw_dir)" || return 0; [ -n "$d" ] || return 0
+  find "$d" -mindepth 1 -maxdepth 1 -type d -name '*-[0-9]*' 2>/dev/null | awk '{
+    n = $0; sub(/.*\//, "", n); kind = n; sub(/-[0-9]+$/, "", kind); rev = n; sub(/.*-/, "", rev)
+    path[NR] = $0; k[NR] = kind; r[NR] = rev + 0; if (r[NR] > best[kind]) best[kind] = r[NR] }
+    END { for (i = 1; i <= NR; i++) if (r[i] < best[k[i]]) print path[i] }'
+}
+
+plugin_old() {  # cached plugin versions no install points at and untouched for 7 days
+  local f="$HOME/.claude/plugins/installed_plugins.json" c="$HOME/.claude/plugins/cache"
+  [ -f "$f" ] && [ -d "$c" ] && has python3 || return 0
+  python3 - "$f" "$c" <<'PY'
+import json, os, sys, time
+keep = set()
+for rows in json.load(open(sys.argv[1])).get("plugins", {}).values():
+    for r in rows if isinstance(rows, list) else [rows]:
+        p = r.get("installPath")
+        if p: keep.add(os.path.realpath(p))
+root = sys.argv[2]
+for mkt in os.listdir(root):
+    if mkt.startswith("temp_"): continue
+    for plug in os.listdir(os.path.join(root, mkt)) if os.path.isdir(os.path.join(root, mkt)) else []:
+        pd = os.path.join(root, mkt, plug)
+        if not os.path.isdir(pd): continue
+        for ver in os.listdir(pd):
+            vd = os.path.join(pd, ver)
+            if os.path.isdir(vd) and os.path.realpath(vd) not in keep and time.time() - os.path.getmtime(vd) > 7 * 86400:
+                print(vd)
+PY
+}
+
+qa_files() {  # ck-qa / ck-lite-qa logs and finished run records older than a day
+  find "$TMPD" -maxdepth 1 -type f \( -name 'ck-[0-9]*.log*' -o -name 'ck-lite-[0-9]*.log*' \) -mmin +1440 2>/dev/null
+  find "$TMPD/ck-qa-run" "$TMPD/ck-lite-qa-run" -mindepth 2 -maxdepth 3 -type f -name rc -mmin +1440 2>/dev/null \
+    | while IFS= read -r f; do dirname -- "$f"; done
+}
+
+npm_dir() { [ -d "$HOME/.npm" ] && echo "$HOME/.npm"; }
+# The store root: each pnpm major keeps its own vN/ beside the others.
+
+pnpm_dir() { local d; has pnpm && d="$(pnpm store path 2>/dev/null | head -1)" && [ -n "$d" ] && dirname -- "$d"; }
+brew_dir() { has brew && brew --cache 2>/dev/null; }
+pip_dir() { has pip3 && pip3 cache dir 2>/dev/null; }
+uv_dir() { has uv && uv cache dir 2>/dev/null; }
+yarn_dir() { has yarn && yarn cache dir 2>/dev/null | head -1; }
+
+# ---- scan ----------------------------------------------------------------------------------
+
+row() { printf '%-17s %9s  %s\n' "$1" "$(human "$2")" "$3"; }
+detail() { printf '                    · %s\n' "$1"; }
+
+scan() {
+  local rows wt br why done_kb=0 done_n=0 kept_kb=0 kept_n=0 d kb n list v pj
+  rows="$(worktrees)"
+  while IFS="$US" read -r wt br why; do
+    [ -n "$wt" ] || continue
+    if [ "$why" = "done" ]; then
+      kb="$(kb_of "$wt")"; done_kb=$((done_kb + kb)); done_n=$((done_n + 1))
+      detail "$(human "$kb") $wt ($br)" >>"$W/done"
+    elif [ "$why" != "locked by a live process" ]; then   # a running agent builds there
+      list="$(build_dirs "$wt")"; [ -n "$list" ] || continue
+      # shellcheck disable=SC2046
+      kb="$(kb_of $(printf '%s\n' "$list" | tr '\n' ' '))"; kept_kb=$((kept_kb + kb)); kept_n=$((kept_n + 1))
+      detail "$(human "$kb") of build output in $wt — $why" >>"$W/kept"
+    fi
+  done <<EOF
+$rows
+EOF
+  [ "$done_n" = 0 ] || { row worktrees "$done_kb" "$done_n finished worktree(s): merged, clean, unlocked — removed with their branch and Docker containers"; cat "$W/done"; }
+  [ "$kept_n" = 0 ] || { row worktree-builds "$kept_kb" "build output in $kept_n kept worktree(s) — source and commits stay"; cat "$W/kept"; }
+
+  if dk_up; then
+    list="$(dk_orphans)"
+    if [ -n "$list" ]; then
+      row docker-orphans 0 "$(printf '%s\n' "$list" | grep -c .) container(s) of removed checkouts, with their own volumes (size unknown until removed)"
+      printf '%s\n' "$list" | awk -F"$US" '{ printf "                    · %s (%s) %s\n", $4, $2, $5 }'
+    fi
+    kb=$(( $(dk_df_kb Images) + $(dk_df_kb "Build Cache") ))
+    [ "$kb" -lt 1024 ] || row docker-cache "$kb" "unused images and build cache — pulled or rebuilt again on demand"
+    n=0; list=""
+    while IFS="$US" read -r v pj; do
+      [ -n "$v" ] || continue
+      if is_anon "$v"; then n=$((n + 1)); else list="$list$v${pj:+ ($pj)}$NL"; fi
+    done <<EOF
+$(dk_dangling)
+EOF
+    [ "$n" = 0 ] || row docker-anon "$(dk_df_kb "Local Volumes")" "$n anonymous volume(s) no container uses (size: all reclaimable volumes)"
+    if [ -n "$list" ]; then
+      row docker-volumes 0 "named volume(s) no container uses — may hold a dev database; cleaned only by name (--volume)"
+      printf '%s' "$list" | while IFS= read -r v; do detail "$v"; done
+    fi
+  fi
+  d="$(vm_disk)"
+  if [ -n "$d" ]; then
+    kb="$(kb_of "$d")"
+    row vm-trim "$kb" "Colima VM disk on the host — fstrim hands blocks freed inside the VM back to macOS"
+  fi
+
+  list="$(qa_files)"
+  # shellcheck disable=SC2046
+  [ -z "$list" ] || row qa-logs "$(kb_of $(printf '%s\n' "$list" | tr '\n' ' '))" "$(printf '%s\n' "$list" | grep -c .) ck-qa / ck-lite-qa log(s) and run record(s) older than a day"
+  d="${XDG_CACHE_HOME:-$HOME/.cache}/ck-replicate"
+  [ ! -d "$d" ] || row replicate-cache "$(kb_of "$d")" "ck-replicate browser profiles"
+  list="$(pw_old)"
+  # shellcheck disable=SC2046
+  [ -z "$list" ] || { row playwright-old "$(kb_of $(printf '%s\n' "$list" | tr '\n' ' '))" "Playwright browser revisions older than the newest of their kind"; printf '%s\n' "$list" | while IFS= read -r d; do detail "${d##*/}"; done; }
+  list="$(plugin_old)"
+  # shellcheck disable=SC2046
+  [ -z "$list" ] || row plugin-cache "$(kb_of $(printf '%s\n' "$list" | tr '\n' ' '))" "$(printf '%s\n' "$list" | grep -c .) cached Claude Code plugin version(s) no install uses"
+
+  d="$(npm_dir)";  [ -z "$d" ] || row npm "$(kb_of "$d")" "npm cache and npx packages (every npx run adds one) — downloaded again on demand"
+  d="$(pnpm_dir)"; [ -z "$d" ] || [ ! -d "$d" ] || row pnpm "$(kb_of "$d")" "pnpm store, all majors — pnpm store prune drops what no project references (current major only)"
+  d="$(yarn_dir)"; [ -z "$d" ] || [ ! -d "$d" ] || row yarn "$(kb_of "$d")" "yarn cache — yarn cache clean"
+  d="$(brew_dir)"; [ -z "$d" ] || [ ! -d "$d" ] || row brew "$(kb_of "$d")" "Homebrew downloads and old formula versions — brew cleanup --prune=all"
+  d="$(pip_dir)";  [ -z "$d" ] || [ ! -d "$d" ] || row pip "$(kb_of "$d")" "pip cache — pip cache purge"
+  d="$(uv_dir)";   [ -z "$d" ] || [ ! -d "$d" ] || row uv "$(kb_of "$d")" "uv cache — uv cache prune"
+  d="$HOME/.claude/projects"
+  [ ! -d "$d" ] || row claude-history "$(kb_of "$d")" "Claude Code transcripts — never deleted here; cleanupPeriodDays in ~/.claude/settings.json bounds them (default 30)"
+}
+
+# ---- clean ---------------------------------------------------------------------------------
+
+say() { echo "ck-disk: $1"; }
+
+clean_one() {
+  local key="$1" kb0 kb1 list wt br why n d v pj repo
+  case "$key" in
+    worktrees)
+      n=0; kb0=0
+      while IFS="$US" read -r wt br why; do
+        [ "$why" = "done" ] || continue
+        repo="$(dirname -- "$(git -C "$wt" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)")"
+        kb0=$((kb0 + $(kb_of "$wt")))
+        dk_up && docker ps -aq --filter "label=com.docker.compose.project.working_dir=$wt" 2>/dev/null | xargs docker rm -f -v >/dev/null 2>&1
+        git -C "$repo" worktree unlock "$wt" >/dev/null 2>&1
+        if git -C "$repo" worktree remove --force "$wt" 2>/dev/null; then
+          n=$((n + 1)); [ -z "$br" ] || git -C "$repo" branch -d "$br" >/dev/null 2>&1
+        fi
+      done <<EOF
+$(worktrees)
+EOF
+      say "worktrees — removed $n finished worktree(s), $(human "$kb0")" ;;
+    worktree-builds)
+      kb0=0; n=0
+      while IFS="$US" read -r wt br why; do
+        [ -n "$wt" ] && [ "$why" != "done" ] && [ "$why" != "locked by a live process" ] || continue
+        list="$(build_dirs "$wt")"; [ -n "$list" ] || continue
+        # shellcheck disable=SC2046
+        kb0=$((kb0 + $(kb_of $(printf '%s\n' "$list" | tr '\n' ' '))))
+        printf '%s\n' "$list" | while IFS= read -r d; do rm -rf "$d"; done
+        n=$((n + 1))
+      done <<EOF
+$(worktrees)
+EOF
+      say "worktree-builds — freed $(human "$kb0") of build output in $n kept worktree(s)" ;;
+    docker-orphans)
+      dk_up || { say "docker-orphans — Docker is not running, skipped"; return; }
+      list="$(dk_orphans)"; n=0
+      [ -z "$list" ] || n="$(printf '%s\n' "$list" | cut -d "$US" -f1 | xargs docker rm -f -v 2>/dev/null | grep -c .)"
+      # Volumes of a removed worktree's own compose project. Only a project named after its
+      # .claude/worktrees/<name> folder is provably that worktree's: a compose file in a
+      # subfolder is named after it, and checkouts sharing a name share its volumes.
+      v="$(printf '%s\n' "$list" | awk -F"$US" '{ wd = $5; i = index(wd, "/.claude/worktrees/"); if (!i) next
+        c = substr(wd, i + 19); sub(/\/.*/, "", c); c = tolower(c); gsub(/[^a-z0-9_-]/, "", c)
+        if ($3 == c) print c }' | sort -u)"
+      d=0
+      while IFS="$US" read -r vol pj; do
+        [ -n "$pj" ] && printf '%s\n' "$v" | grep -qx -- "$pj" || continue
+        [ -z "$(docker ps -aq --filter "label=com.docker.compose.project=$pj" 2>/dev/null)" ] || continue
+        docker volume rm "$vol" >/dev/null 2>&1 && d=$((d + 1))
+      done <<EOF
+$(dk_dangling)
+EOF
+      say "docker-orphans — removed $n container(s) and $d volume(s) of removed checkouts" ;;
+    docker-cache)
+      dk_up || { say "docker-cache — Docker is not running, skipped"; return; }
+      kb0=$(( $(dk_df_kb Images) + $(dk_df_kb "Build Cache") ))
+      docker image prune -af >/dev/null 2>&1; docker builder prune -af >/dev/null 2>&1
+      say "docker-cache — freed about $(human "$kb0") of unused images and build cache" ;;
+    docker-anon)
+      dk_up || { say "docker-anon — Docker is not running, skipped"; return; }
+      n=0
+      while IFS="$US" read -r v pj; do
+        is_anon "$v" && docker volume rm "$v" >/dev/null 2>&1 && n=$((n + 1))
+      done <<EOF
+$(dk_dangling)
+EOF
+      say "docker-anon — removed $n anonymous volume(s)" ;;
+    vm-trim)
+      has colima || { say "vm-trim — colima not installed, skipped"; return; }
+      d="$(vm_disk)"; kb0="$(kb_of "$d")"
+      colima ssh -- sudo fstrim -a >/dev/null 2>&1 || { say "vm-trim — colima is not running, skipped"; return; }
+      kb1="$(kb_of "$d")"
+      say "vm-trim — Colima VM disk $(human "$kb0") → $(human "$kb1")" ;;
+    qa-logs)
+      list="$(qa_files)"
+      # shellcheck disable=SC2046
+      kb0="$(kb_of $(printf '%s\n' "$list" | tr '\n' ' '))"
+      printf '%s\n' "$list" | while IFS= read -r d; do [ -z "$d" ] || rm -rf "$d"; done
+      say "qa-logs — freed $(human "$kb0")" ;;
+    replicate-cache)
+      d="${XDG_CACHE_HOME:-$HOME/.cache}/ck-replicate"; kb0="$(kb_of "$d")"; rm -rf "$d"
+      say "replicate-cache — freed $(human "$kb0")" ;;
+    playwright-old)
+      list="$(pw_old)"
+      # shellcheck disable=SC2046
+      kb0="$(kb_of $(printf '%s\n' "$list" | tr '\n' ' '))"
+      printf '%s\n' "$list" | while IFS= read -r d; do [ -z "$d" ] || rm -rf "$d"; done
+      say "playwright-old — freed $(human "$kb0") (a project pinned to an older Playwright downloads it again)" ;;
+    plugin-cache)
+      list="$(plugin_old)"
+      # shellcheck disable=SC2046
+      kb0="$(kb_of $(printf '%s\n' "$list" | tr '\n' ' '))"
+      printf '%s\n' "$list" | while IFS= read -r d; do [ -z "$d" ] || rm -rf "$d"; done
+      say "plugin-cache — freed $(human "$kb0")" ;;
+    npm|pnpm|yarn|brew|pip|uv)
+      d="$("${key}_dir")"; [ -n "$d" ] && [ -d "$d" ] || { say "$key — not installed, skipped"; return; }
+      kb0="$(kb_of "$d")"
+      case "$key" in
+        npm)  { has npm && npm cache clean --force; } >/dev/null 2>&1; rm -rf "$d/_npx" ;;
+        pnpm) pnpm store prune >/dev/null 2>&1 ;;
+        yarn) yarn cache clean >/dev/null 2>&1 ;;
+        brew) brew cleanup --prune=all -s >/dev/null 2>&1 ;;
+        pip)  pip3 cache purge >/dev/null 2>&1 ;;
+        uv)   uv cache prune >/dev/null 2>&1 ;;
+      esac
+      kb1="$(kb_of "$d")"
+      say "$key — freed $(human $((kb0 - kb1)))" ;;
+    *) say "$key — unknown key, skipped" ;;
+  esac
+}
+
+clean_volume() {  # a named dangling volume, by name only
+  dk_up || { say "volume $1 — Docker is not running, skipped"; return; }
+  if dk_dangling | cut -d "$US" -f1 | grep -qx -- "$1"; then
+    docker volume rm "$1" >/dev/null 2>&1 && say "volume $1 — removed" || say "volume $1 — could not be removed"
+  else
+    say "volume $1 — not a dangling volume (in use or missing), kept"
+  fi
+}
+
+# ---- main ----------------------------------------------------------------------------------
+
+CMD="${1:-}"; [ "$#" -eq 0 ] || shift
+KEYS=""; VOLS=""
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --root) [ -n "${2:-}" ] || die "--root needs a directory"; add_root "$2"; shift ;;
+    --volume) [ -n "${2:-}" ] || die "--volume needs a name"; VOLS="$VOLS $2"; shift ;;
+    -*) die "unknown option: $1" ;;
+    *) KEYS="$KEYS $1" ;;
+  esac
+  shift
+done
+if [ -z "$ROOTS" ]; then
+  if [ -n "${CK_DISK_ROOTS:-}" ]; then
+    old="$IFS"; IFS=:; for r in $CK_DISK_ROOTS; do add_root "$r"; done; IFS="$old"
+  else
+    for r in "$HOME/Dev" "$HOME/dev" "$HOME/Projects" "$HOME/projects" "$HOME/code" "$HOME/src" "$HOME/work"; do
+      [ -d "$r" ] && add_root "$r"
+    done
+  fi
+fi
+
+case "$CMD" in
+  scan)
+    W="$(mktemp -d "$TMPD/ck-disk.XXXXXX")" || die "no temp dir"
+    trap 'rm -rf "$W"' EXIT
+    : >"$W/done"; : >"$W/kept"
+    scan ;;
+  clean)
+    [ -n "$KEYS$VOLS" ] || die "clean needs at least one key (see ck-disk scan) or --volume <name>"
+    for k in $KEYS; do clean_one "$k"; done
+    for v in $VOLS; do clean_volume "$v"; done ;;
+  -h|--help|"") sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//' ;;
+  *) die "unknown command: $CMD (scan|clean)" ;;
+esac
