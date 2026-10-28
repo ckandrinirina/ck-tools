@@ -28,6 +28,9 @@ TMPD="${TMPDIR:-/tmp}"; TMPD="${TMPD%/}"
 kb_of() { [ $# -gt 0 ] || { echo 0; return; }; du -sk "$@" 2>/dev/null | awk '{s+=$1} END{print s+0}'; }
 human() { awk -v k="${1:-0}" 'BEGIN{ if (k >= 1048576) printf "%.1f GB", k/1048576; else if (k >= 1024) printf "%d MB", k/1024; else printf "%d KB", k }'; }
 has() { command -v "$1" >/dev/null 2>&1; }
+# git on a repository found by scanning: its own config must never run a command
+# (core.fsmonitor runs on every status), so config-driven execution is switched off.
+g() { git -c core.fsmonitor=false -c core.hooksPath=/dev/null -c core.untrackedCache=false "$@"; }
 under() { case "$1/" in "$2"/*) return 0 ;; esac; return 1; }
 
 ROOTS=""
@@ -53,8 +56,8 @@ repos() {  # each main checkout under the roots, plus the current one
 landed_in() {  # repo sha → 0 when sha is contained in one of them
   local ref
   for ref in HEAD refs/remotes/origin/HEAD main master develop; do
-    git -C "$1" rev-parse -q --verify "$ref^{commit}" >/dev/null 2>&1 || continue
-    git -C "$1" merge-base --is-ancestor "$2" "$ref" 2>/dev/null && return 0
+    g -C "$1" rev-parse -q --verify "$ref^{commit}" >/dev/null 2>&1 || continue
+    g -C "$1" merge-base --is-ancestor "$2" "$ref" 2>/dev/null && return 0
   done
   return 1
 }
@@ -65,7 +68,7 @@ worktrees() {
   local repo
   repos | sort -u | while IFS= read -r repo; do
     [ -d "$repo" ] || continue
-    { git -C "$repo" worktree list --porcelain 2>/dev/null; echo; } | awk 'm { print; next } $0 == "" { m = 1 }'
+    { g -C "$repo" worktree list --porcelain 2>/dev/null; echo; } | awk 'm { print; next } $0 == "" { m = 1 }'
   done | wt_rows | sort -u
 }
 
@@ -79,16 +82,16 @@ wt_rows() {  # porcelain blocks of linked worktrees → rows
         locked*) lk="${line#locked}"; lk="${lk# }"; [ -n "$lk" ] || lk="locked" ;;
         "")
           if [ -n "$wt" ] && [ -d "$wt" ]; then
-            repo="$(git -C "$wt" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)"
+            repo="$(g -C "$wt" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)"
             repo="$(dirname -- "$repo")"
             # belt and braces: a checkout whose git dir is the common dir is a main one
-            [ "$(git -C "$wt" rev-parse --absolute-git-dir 2>/dev/null)" != "$repo/.git" ] || { wt=""; continue; }
+            [ "$(g -C "$wt" rev-parse --absolute-git-dir 2>/dev/null)" != "$repo/.git" ] || { wt=""; continue; }
             why=""
             if [ -n "$lk" ]; then
               pid="$(printf '%s' "$lk" | sed -n 's/.*(pid \([0-9][0-9]*\).*/\1/p')"
               if [ -z "$pid" ] || kill -0 "$pid" 2>/dev/null; then why="locked by a live process"; fi
             fi
-            [ -n "$why" ] || [ -z "$(git -C "$wt" status --porcelain 2>/dev/null | head -1)" ] || why="uncommitted changes"
+            [ -n "$why" ] || [ -z "$(g -C "$wt" status --porcelain 2>/dev/null | head -1)" ] || why="uncommitted changes"
             [ -n "$why" ] || landed_in "$repo" "$sha" || why="unmerged commits"
             printf '%s%s%s%s%s\n' "$wt" "$US" "$br" "$US" "${why:-done}"
           fi
@@ -103,8 +106,8 @@ build_dirs() {  # gitignored build-output dirs under checkout $1 that hold no tr
   # shellcheck disable=SC2086  # $expr is the word-split -name list
   find "$root" -mindepth 1 -maxdepth 4 -name .git -prune -o -type d \( $expr \) -prune -print 2>/dev/null \
     | while IFS= read -r d; do
-        git -C "$root" check-ignore -q "$d" 2>/dev/null || continue
-        [ -z "$(git -C "$root" ls-files -- "$d" 2>/dev/null | head -1)" ] || continue
+        g -C "$root" check-ignore -q "$d" 2>/dev/null || continue
+        [ -z "$(g -C "$root" ls-files -- "$d" 2>/dev/null | head -1)" ] || continue
         printf '%s\n' "$d"
       done
 }
@@ -187,10 +190,9 @@ for mkt in os.listdir(root):
 PY
 }
 
-qa_files() {  # ck-qa / ck-lite-qa logs and finished run records older than a day
+qa_files() {  # ck-qa / ck-lite-qa logs and run-record files older than a day
   find "$TMPD" -maxdepth 1 -type f \( -name 'ck-[0-9]*.log*' -o -name 'ck-lite-[0-9]*.log*' \) -mmin +1440 2>/dev/null
-  find "$TMPD/ck-qa-run" "$TMPD/ck-lite-qa-run" -mindepth 2 -maxdepth 3 -type f -name rc -mmin +1440 2>/dev/null \
-    | while IFS= read -r f; do dirname -- "$f"; done
+  find "$TMPD/ck-qa-run" "$TMPD/ck-lite-qa-run" -mindepth 2 -maxdepth 3 -type f -mmin +1440 2>/dev/null
 }
 
 npm_dir() { [ -d "$HOME/.npm" ] && echo "$HOME/.npm"; }
@@ -287,12 +289,12 @@ clean_one() {
       n=0; kb0=0
       while IFS="$US" read -r wt br why; do
         [ "$why" = "done" ] || continue
-        repo="$(dirname -- "$(git -C "$wt" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)")"
+        repo="$(dirname -- "$(g -C "$wt" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)")"
         kb0=$((kb0 + $(kb_of "$wt")))
         dk_up && docker ps -aq --filter "label=com.docker.compose.project.working_dir=$wt" 2>/dev/null | xargs docker rm -f -v >/dev/null 2>&1
-        git -C "$repo" worktree unlock "$wt" >/dev/null 2>&1
-        if git -C "$repo" worktree remove --force "$wt" 2>/dev/null; then
-          n=$((n + 1)); [ -z "$br" ] || git -C "$repo" branch -d "$br" >/dev/null 2>&1
+        g -C "$repo" worktree unlock "$wt" >/dev/null 2>&1
+        if g -C "$repo" worktree remove --force "$wt" 2>/dev/null; then
+          n=$((n + 1)); [ -z "$br" ] || g -C "$repo" branch -d "$br" >/dev/null 2>&1
         fi
       done <<EOF
 $(worktrees)
@@ -354,7 +356,10 @@ EOF
       list="$(qa_files)"
       # shellcheck disable=SC2046
       kb0="$(kb_of $(printf '%s\n' "$list" | tr '\n' ' '))"
-      printf '%s\n' "$list" | while IFS= read -r d; do [ -z "$d" ] || rm -rf "$d"; done
+      # files only, deleted by find itself (it never follows a symlink), then empty run dirs
+      find "$TMPD" -maxdepth 1 -type f \( -name 'ck-[0-9]*.log*' -o -name 'ck-lite-[0-9]*.log*' \) -mmin +1440 -exec rm -f {} + 2>/dev/null
+      find "$TMPD/ck-qa-run" "$TMPD/ck-lite-qa-run" -mindepth 2 -maxdepth 3 -type f -mmin +1440 -exec rm -f {} + 2>/dev/null
+      find "$TMPD/ck-qa-run" "$TMPD/ck-lite-qa-run" -mindepth 1 -type d -empty -delete 2>/dev/null
       say "qa-logs — freed $(human "$kb0")" ;;
     replicate-cache)
       d="${XDG_CACHE_HOME:-$HOME/.cache}/ck-replicate"; kb0="$(kb_of "$d")"; rm -rf "$d"
