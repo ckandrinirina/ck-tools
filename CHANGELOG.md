@@ -5,6 +5,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), [Semantic Vers
 
 ## [Unreleased]
 
+## [2.8.0] — 2026-10-29
+
+### Added
+- **report**: new skill — reports a bug in ck-tools itself as a scrubbed GitHub issue, finds duplicates first, and files only after the user's one yes. A `PostToolUse`/`PostToolUseFailure` hook (`ck-tools-report hook`) spots crashes in the plugin's own scripts and hands them over.
+
 ## [2.7.1] — 2026-10-28
 
 ### Fixed
