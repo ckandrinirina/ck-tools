@@ -1,5 +1,5 @@
 {
-  "description": "ck-tools hooks: the formatter after edits, and the mod (hooks module) for the plan-limit band, its toasts, the update check and the zero-model /usage-pace and /usage-band",
+  "description": "ck-tools hooks: the formatter after edits, and the mod (hooks module) for the plan-limit band, its toasts, the update check and the zero-model /usage-pace and /usage-band, and the bug reporter that spots a crash in this plugin's own scripts",
   "modules": [
     "./mod/register.tsx"
   ],
@@ -11,6 +11,28 @@
           {
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}\"/scripts/format.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/bin/ck-tools-report hook",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/bin/ck-tools-report hook",
+            "timeout": 10
           }
         ]
       }
