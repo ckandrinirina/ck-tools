@@ -185,7 +185,7 @@ function repo(on: On, isRepo = true) {
   on("process.run", (_$, e) => ({
     value: !isRepo
       ? { exitCode: 128, stderr: "fatal", stdout: "" }
-      : e.argv[1] === "status"
+      : e.argv.includes("status")
         ? {
             exitCode: 0,
             stderr: "",
@@ -223,6 +223,25 @@ test("/usage-band hides the weekly limit only; the status row stays", async ($, 
   const ui = await $.ui.mount(BAND as never);
   expect(await ui.find({ text: "7d" })).toBeUndefined();
   expect(await ui.find({ text: "◆ Opus 5.5" })).toBeDefined();
+});
+
+test("git runs with the repo's command-running config turned off", async ($, on) => {
+  const calls: string[][] = [];
+  session(on, LIMITS);
+  on("session.model", () => ({ value: "opus" }));
+  on("session.cwd", () => ({ value: "/p" }));
+  on("process.run", (_$, e) => {
+    calls.push([...e.argv]);
+    return { value: { exitCode: 0, stderr: "", stdout: "# branch.head main\n" } };
+  });
+  await $.session.start({ surface: "terminal", isInteractive: true, cwd: "/p" });
+  expect(calls.length).toBe(2);
+  for (const argv of calls) {
+    expect(argv).toContain("core.fsmonitor=false");
+    expect(argv).toContain("core.hooksPath=/dev/null");
+  }
+  expect(calls[1]).toContain("--no-ext-diff");
+  expect(calls[1]).toContain("--no-textconv");
 });
 
 test("outside a git repo the row draws without the branch", async ($, on) => {

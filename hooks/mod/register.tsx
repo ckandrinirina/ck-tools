@@ -55,6 +55,10 @@ let statusOn = true;
 // Git runs at most this often; the minute tick and every turn's end ask for it.
 const GIT_EVERY_MS = 5_000;
 let gitAt = 0;
+// A cloned repo's own .git/config can name commands git runs on a status or a diff (an
+// fsmonitor, an external diff, a textconv driver): every one is turned off, since this runs
+// unasked, once a minute, in whatever repo the session is in. The engine already turns hooks off.
+const GIT = ["git", "-c", "core.fsmonitor=false", "-c", "core.hooksPath=/dev/null"];
 let thresholds: number[] = [80, 95];
 
 // The saved reading and the hidden flag, back into $.state: at start, and after /clear,
@@ -131,15 +135,15 @@ async function refreshStatus(
     try {
       const cwd = await $.session.cwd();
       const st = await $.process.run(
-        ["git", "status", "--porcelain=v2", "--branch"],
+        [...GIT, "status", "--porcelain=v2", "--branch"],
         { cwd, timeoutMs: 3_000 },
       );
       next.git = st.exitCode === 0 ? parseGitStatus(st.stdout) : undefined;
       if (next.git) {
-        const diff = await $.process.run(["git", "diff", "HEAD", "--shortstat"], {
-          cwd,
-          timeoutMs: 3_000,
-        });
+        const diff = await $.process.run(
+          [...GIT, "diff", "--no-ext-diff", "--no-textconv", "HEAD", "--shortstat"],
+          { cwd, timeoutMs: 3_000 },
+        );
         Object.assign(next, parseShortstat(diff.exitCode === 0 ? diff.stdout : ""));
       } else Object.assign(next, { added: 0, removed: 0 });
     } catch {
