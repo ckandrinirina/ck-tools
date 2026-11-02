@@ -59,7 +59,7 @@ in `.claude/settings.json`:
 ```
 
 This keeps unrelated repos free of the toolkit's slash commands. To get the
-[plan-limit band](#plan-limit-band) in every session, enable it in `~/.claude/settings.json`
+[status row and weekly limit](#status-row-and-weekly-limit) in every session, enable it in `~/.claude/settings.json`
 instead.
 
 ## Slash commands
@@ -78,36 +78,45 @@ instead.
 | `/ck-tools:showcase` | Analyze a product and build a modern Astro presentation website themed after the app (hero, features, platform sections, getting-started, changelog), package it as an independent gitignored GitHub repo with a saved config, then guide free deployment. Re-run to intelligently update the site from project changes. Accepts an optional product name or output directory. |
 | `/ck-tools:understand` | Explain a file, codebase, spec, diff, error, config, command or concept step by step, in your language. Flags: `--quick`, `--deep`, `--lang=<code>`. |
 
-## Plan-limit band
+## Status row and weekly limit
 
-A mod (in-process hooks module, `hooks/mod/`) draws your Claude plan limits above the prompt:
-how much of the 5-hour and weekly windows you have used, whether your pace is safe or will run
-out before the reset, and when each window resets.
+A mod (in-process hooks module, `hooks/mod/`) draws a status row and your Claude weekly plan
+limit above the prompt, on one line when the terminal is wide enough and on two when it isn't:
 
 ```
-5h ██░░░░░░ 20% ✓ safe · ~49% at reset · resets 2h57m     7d █████░░░ 61% ✓ safe · ~71% at reset · resets 22h57m
+⎇ main +4 −0 ↑1 ?2 │ ◆ Opus 5.5 │ ctx ▰▱▱▱▱▱ 12% │ ◷ 1h05m │ 7d █████░░░ 61% ✓ safe · ~71% at reset · resets 22h57m
 ```
+
+**Status row**: the git branch (`@<sha>` when detached), lines added and removed against `HEAD`,
+commits ahead `↑` and behind `↓` its upstream, untracked files `?`; the model; how full the
+context window is (green under 50%, amber under 80%, red after); how long the session has run.
+Git is read at the end of every turn and once a minute, never more than every 5 seconds. It
+replaces a `ccstatusline`-style status line, so you can drop that from your `statusLine` command.
+
+**Weekly limit**: how much of the 7-day window you have used, whether your pace is safe or will
+run out before the reset, and when it resets. Claude no longer enforces the 5-hour window, so
+the band ignores it, including a reading saved by an older ck-tools.
 
 | Verdict | Means |
 |---|---|
 | `✓ safe · ~49% at reset` | At the pace so far, the window ends under 85% |
 | `⚠ tight · ~96% at reset` | It ends between 85% and 100% |
-| `✗ out in 1h30m` | It runs out before the reset, in that long |
+| `✗ out in 1d12h` | It runs out before the reset, in that long |
 | `✗ limit hit` | The window is used up |
 | `✓ too early to tell` | Under 5% of the window has passed and use is under 50% |
 
-**Pace** is use divided by the share of the window that has passed: 40% used one hour into a
-5-hour window projects to 200%, and runs out in 1h30m. Each window also toasts once per
-threshold (80% and 95% by default) and once when the pace will run it out before the reset,
-de-duplicated across every session on the machine.
+**Pace** is use divided by the share of the window that has passed: 40% used one day into the
+7-day window projects to 280%, and runs out in 1d12h. The window also toasts once per threshold
+(80% and 95% by default) and once when the pace will run it out before the reset, de-duplicated
+across every session on the machine.
 
 - **Everywhere**: the band shows wherever ck-tools is enabled. To see it in every session, enable
   ck-tools in `~/.claude/settings.json` instead of per project. ck-code's and ck-code-lite's
   bands draw under it.
 - **Commands**, with no model turn: `/usage-pace` prints the full report; `/usage-band` hides or
-  shows the band, remembered across sessions.
-- **Settings** (`/plugin` → ck-tools → configure): `usage_band` and `usage_alerts` turn the band
-  and the toasts off; `usage_alert_at` sets the thresholds (`80,95`); `update_check` turns off the
+  shows the weekly limit (the status row stays), remembered across sessions.
+- **Settings** (`/plugin` → ck-tools → configure): `status_row`, `usage_band` and `usage_alerts`
+  turn the status row, the weekly limit and the toasts off; `usage_alert_at` sets the thresholds (`80,95`); `update_check` turns off the
   update check below.
 - **Update check**: when the marketplace serves a newer ck-tools than the one loaded, one toast per
   new version and a row above the band until you update
