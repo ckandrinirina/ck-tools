@@ -5,6 +5,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), [Semantic Vers
 
 ## [Unreleased]
 
+## [2.9.1] — 2026-11-02
+
+### Security
+- **mod**: the status row's `git status` and `git diff` run with `core.fsmonitor`, `core.hooksPath`, external diff and textconv turned off, so a cloned repo's own `.git/config` cannot make the minute-by-minute refresh run a command.
+
 ## [2.9.0] — 2026-11-02
 
 ### Added
