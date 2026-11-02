@@ -11,6 +11,15 @@ declare module "claude-code" {
       // The clock the band draws against (ms), moved once a minute; 0 before the first tick.
       now: number;
       hidden: boolean;
+      // The status row: git branch and diff, model, context fill, session start.
+      status: {
+        git?: { branch: string; ahead: number; behind: number; untracked: number };
+        added: number;
+        removed: number;
+        model: string;
+        ctx?: number;
+        startedAt?: number;
+      } | null;
     };
   }
 }

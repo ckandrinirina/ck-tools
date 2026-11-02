@@ -26,15 +26,21 @@ const DAY = 24 * HOUR;
 
 // Windows of known length get a pace; any other kind (a gateway's spend_limit) gets a level.
 export const WINDOW_MS: Record<string, number> = {
-  five_hour: 5 * HOUR,
   seven_day: 7 * DAY,
 };
 
 const LABELS: Record<string, string> = {
-  five_hour: "5h",
   seven_day: "7d",
   spend_limit: "$",
 };
+
+// Windows Claude no longer enforces: dropped wherever a reading enters, so an engine that still
+// reports one, or a reading saved by an older ck-tools, is never drawn, toasted or reported.
+const RETIRED = new Set(["five_hour"]);
+
+export function isLive(r: { kind: string }): boolean {
+  return !RETIRED.has(r.kind);
+}
 
 // Projected use at reset below SAFE is safe, below 100 is tight, above runs out.
 export const SAFE = 85;
@@ -80,12 +86,12 @@ export function pace(r: Reading, now: number): Pace {
   };
 }
 
-// 5h before 7d before anything else, so the band reads the same every time.
+// 7d before anything else, so the band reads the same every time; retired windows left out.
 export function paces(snapshot: Snapshot | null, now: number): Pace[] {
   if (!snapshot) return [];
-  const order = (k: string) =>
-    k === "five_hour" ? 0 : k === "seven_day" ? 1 : 2;
-  return [...snapshot.readings]
+  const order = (k: string) => (k === "seven_day" ? 0 : 1);
+  return snapshot.readings
+    .filter(isLive)
     .sort((a, b) => order(a.kind) - order(b.kind))
     .map((r) => pace(r, now));
 }
@@ -214,7 +220,7 @@ export function alertsFor(
 
 // Readings as the engine hands them, frozen: copied to plain data for state and store.
 export function toReadings(list: readonly Reading[]): Reading[] {
-  return list.map((r) => ({
+  return list.filter(isLive).map((r) => ({
     kind: r.kind,
     percentUsed: r.percentUsed,
     ...(r.resetsAt ? { resetsAt: r.resetsAt } : {}),
