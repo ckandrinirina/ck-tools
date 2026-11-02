@@ -5,6 +5,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), [Semantic Vers
 
 ## [Unreleased]
 
+## [2.9.0] — 2026-11-02
+
+### Added
+- **mod**: a status row above the prompt (git branch, lines added and removed, ahead/behind, untracked files, model, context fill bar, session time) so a `ccstatusline`-style status line is no longer needed; it shares a line with the weekly limit when the terminal is wide. Turned off with the new `status_row` setting.
+
+### Changed
+- **mod**: the band, its toasts and `/usage-pace` show the weekly limit only — Claude no longer enforces the 5-hour window, so a 5-hour reading (fresh, or saved by an older ck-tools) is ignored. `/usage-band` now hides the weekly limit alone; the status row stays.
+
 ## [2.8.1] — 2026-10-29
 
 ### Security
