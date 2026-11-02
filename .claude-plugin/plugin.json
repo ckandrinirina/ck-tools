@@ -2,8 +2,8 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "ck-tools",
   "displayName": "CK Tools",
-  "description": "Optional toolkit for Claude Code: utility skills for dependency upgrades, audits, snapshots and other repo-level chores, plus a band above the prompt with your 5-hour and weekly plan limits and pace. Designed to coexist with ck-code without overlapping its spec-driven workflow.",
-  "version": "2.8.1",
+  "description": "Optional toolkit for Claude Code: utility skills for dependency upgrades, audits, snapshots and other repo-level chores, plus a band above the prompt with a status row (branch, diff, model, context, session time) and your weekly plan limit and pace. Designed to coexist with ck-code without overlapping its spec-driven workflow.",
+  "version": "2.9.0",
   "author": {
     "name": "ckandrinirina",
     "email": "ckandrinirina@gmail.com"
@@ -29,13 +29,19 @@
     "usage_band": {
       "type": "boolean",
       "title": "Plan-limit band",
-      "description": "Show the 5-hour and weekly limits, your pace and the reset times above the prompt.",
+      "description": "Show the weekly limit, your pace and the reset time above the prompt.",
+      "default": true
+    },
+    "status_row": {
+      "type": "boolean",
+      "title": "Status row",
+      "description": "Show the git branch and diff, model, context fill and session time above the prompt.",
       "default": true
     },
     "usage_alerts": {
       "type": "boolean",
       "title": "Plan-limit toasts",
-      "description": "Toast once per window when its use crosses a threshold, and once when the pace runs it out before the reset.",
+      "description": "Toast once per weekly window when its use crosses a threshold, and once when the pace runs it out before the reset.",
       "default": true
     },
     "usage_alert_at": {
