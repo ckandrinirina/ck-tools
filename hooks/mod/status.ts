@@ -74,3 +74,26 @@ export function slimBar(percent: number, width = 6): string {
   const full = Math.max(0, Math.min(width, Math.round((percent / 100) * width)));
   return "▰".repeat(full) + "▱".repeat(width - full);
 }
+
+// The theme keys the bars draw in, as colors an SVG can hold: an Svg is drawn as an image, so
+// it cannot read the theme. Mid tones that read on a light and a dark background alike.
+const PILL_HEX: Record<string, string> = {
+  success: "#3fb950",
+  warning: "#d29922",
+  error: "#e5534b",
+};
+
+// A rounded progress pill for the surfaces that draw Svg (desktop, editor, mobile), where the
+// terminal's block glyphs fall into a proportional font: a soft track, a filled part, any width.
+export function pillSvg(percent: number, colorKey: string, width = 64, height = 8): string {
+  const p = Math.max(0, Math.min(100, Number.isFinite(percent) ? percent : 0));
+  const r = height / 2;
+  const fill = p > 0 ? Math.max(height, Math.round((p / 100) * width)) : 0;
+  const hex = PILL_HEX[colorKey] ?? "#3fb950";
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">` +
+    `<rect width="${width}" height="${height}" rx="${r}" fill="#8b8b8b" fill-opacity="0.28"/>` +
+    (fill ? `<rect width="${fill}" height="${height}" rx="${r}" fill="${hex}"/>` : "") +
+    `</svg>`
+  );
+}

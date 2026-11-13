@@ -259,3 +259,15 @@ test("outside a git repo the row draws without the branch", async ($, on) => {
   expect(await ui.find({ text: /⎇/ })).toBeUndefined();
   expect(await ui.find({ text: "◆ Opus 5.5" })).toBeDefined();
 });
+
+test("on desktop the bars are Svg pills and the separators dots; the terminal keeps its glyphs", async ($, on) => {
+  session(on, LIMITS, {}, { startedAt: NOW, percent: 15 });
+  await $.session.start({ surface: "desktop", isInteractive: true, cwd: "/p" });
+  const desk = await $.ui.mount({ ...BAND, surface: "desktop" } as never);
+  expect(await desk.find({ type: "Svg" })).toBeDefined();
+  expect(await desk.find({ text: "31%" })).toBeDefined();
+  expect(await desk.find({ text: /[█░▰▱│⎇]/ })).toBeUndefined();
+  const term = await $.ui.mount(BAND as never);
+  expect(await term.find({ type: "Svg" })).toBeUndefined();
+  expect(await term.find({ text: /█/ })).toBeDefined();
+});

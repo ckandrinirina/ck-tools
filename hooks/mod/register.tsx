@@ -24,6 +24,7 @@ import {
   modelName,
   parseGitStatus,
   parseShortstat,
+  pillSvg,
   sessionText,
   slimBar,
 } from "./status";
@@ -256,14 +257,34 @@ export const register: Register = (on, options) => {
   on("ui.render", { component: "AbovePrompt" }, async ($, e, next) => {
     const t = await read($, now);
     if (e.props.hasSurvey || t === 0 || e.props.maxRows < 1) return next(e);
-    const { Box, Text } = $.ui.resolve(e);
+    const ui = $.ui.resolve(e);
+    const { Box, Text } = ui;
+    // The terminal draws glyph bars in its monospaced cells; every other surface lays text out
+    // in a proportional font, where those glyphs break up, so it gets rounded Svg pills, dot
+    // separators and tabular digits instead.
+    // (resolve() hands the terminal an Svg too, drawn as nothing, so the surface decides.)
+    const Svg = e.surface !== "terminal" && "Svg" in ui ? ui.Svg : undefined;
+    const meter = (k: string, percent: number, colorKey: string, glyphs: string, px: number) =>
+      Svg ? (
+        <Svg
+          key={k}
+          source={pillSvg(percent, colorKey, px)}
+          alt={`${fmtPercent(percent)} used`}
+          width={px}
+          height={8}
+        />
+      ) : (
+        <Text key={k} color={colorKey}>
+          {glyphs}
+        </Text>
+      );
     const snapshot = await read($, usage);
     const showUsage = bandOn && !(await read($, hidden));
     const all = showUsage ? paces(snapshot, t) : [];
     const s = statusOn ? await read($, status) : null;
     const sep = (k: string) => (
       <Text key={k} dimColor>
-        │
+        {Svg ? "·" : "│"}
       </Text>
     );
 
@@ -273,7 +294,7 @@ export const register: Register = (on, options) => {
       const g = s.git;
       const bits = [
         <Text key="b" color="suggestion" bold>
-          ⎇ {g.branch}
+          {Svg ? g.branch : `⎇ ${g.branch}`}
         </Text>,
       ];
       let width = 2 + g.branch.length;
@@ -336,8 +357,10 @@ export const register: Register = (on, options) => {
         el: (
           <Box key="ctx" gap={1}>
             <Text dimColor>ctx</Text>
-            <Text color={ctxColor(s.ctx)}>{slimBar(s.ctx)}</Text>
-            <Text bold>{pct}</Text>
+            {meter("bar", s.ctx, ctxColor(s.ctx), slimBar(s.ctx), 56)}
+            <Text bold tabular>
+              {pct}
+            </Text>
           </Box>
         ),
         width: 12 + pct.length,
@@ -373,8 +396,10 @@ export const register: Register = (on, options) => {
         el: (
           <Box key={`w-${p.kind}`} gap={1}>
             <Text bold>{p.label}</Text>
-            <Text color={color(p.verdict)}>{bar(p.used)}</Text>
-            <Text bold>{fmtPercent(p.used)}</Text>
+            {meter("bar", p.used, color(p.verdict), bar(p.used), 80)}
+            <Text bold tabular>
+              {fmtPercent(p.used)}
+            </Text>
             <Text color={color(p.verdict)} wrap="truncate-end">
               {verdictText(p)}
             </Text>

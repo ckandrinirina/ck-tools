@@ -5,6 +5,7 @@ import {
   modelName,
   parseGitStatus,
   parseShortstat,
+  pillSvg,
   sessionText,
 } from "../../hooks/mod/status";
 
@@ -65,4 +66,13 @@ test("ctxColor warns as the window fills", () => {
 test("sessionText counts from the start", () => {
   expect(sessionText(1000, 1000 + 30_000)).toBe("<1m");
   expect(sessionText(0, 65 * 60_000)).toBe("1h05m");
+});
+
+test("pillSvg fills its share in the verdict's color and clamps", () => {
+  const half = pillSvg(50, "warning", 80);
+  expect(half).toContain('width="40"');
+  expect(half).toContain("#d29922");
+  expect(pillSvg(0, "success", 80)).not.toContain("#3fb950");
+  expect(pillSvg(250, "error", 80)).toContain('<rect width="80" height="8" rx="4" fill="#e5534b"/>');
+  expect(pillSvg(Number.NaN, "nope", 80)).toMatch(/^<svg .*<\/svg>$/);
 });
