@@ -5,6 +5,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), [Semantic Vers
 
 ## [Unreleased]
 
+## [2.9.3] — 2026-11-13
+
+### Changed
+- **mod**: in Claude Desktop (and the editor and mobile apps) the status row and weekly limit draw their bars as rounded SVG progress pills, dots between segments and fixed-width digits, since the terminal's `▰▱`/`█░` glyphs and `│` broke up in a proportional font; the terminal row is unchanged.
+
 ## [2.9.2] — 2026-11-13
 
 ### Security
