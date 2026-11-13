@@ -3,7 +3,7 @@
   "name": "ck-tools",
   "displayName": "CK Tools",
   "description": "Optional toolkit for Claude Code: utility skills for dependency upgrades, audits, snapshots and other repo-level chores, plus a band above the prompt with a status row (branch, diff, model, context, session time) and your weekly plan limit and pace. Designed to coexist with ck-code without overlapping its spec-driven workflow.",
-  "version": "2.9.1",
+  "version": "2.9.2",
   "author": {
     "name": "ckandrinirina",
     "email": "ckandrinirina@gmail.com"
