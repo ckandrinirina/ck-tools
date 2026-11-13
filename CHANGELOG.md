@@ -5,6 +5,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), [Semantic Vers
 
 ## [Unreleased]
 
+## [2.9.2] — 2026-11-13
+
+### Security
+- **disk-clean**: `ck-disk` runs its embedded Python with `-I`, so a `json.py` in the directory it is started from can no longer run as code (same fix as ck-code 7.29.1 and ck-code-lite 1.20.1).
+
+### Fixed
+- **mod**: the band's segments and the mod tests are typed for the newer Claude Code typings (2.1.323), so `claude plugin validate --strict` and the plugin doctor pass again; behaviour is unchanged.
+
 ## [2.9.1] — 2026-11-02
 
 ### Security
