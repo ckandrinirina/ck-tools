@@ -170,7 +170,7 @@ pw_old() {  # browser revisions below the newest of their kind
 plugin_old() {  # cached plugin versions no install points at and untouched for 7 days
   local f="$HOME/.claude/plugins/installed_plugins.json" c="$HOME/.claude/plugins/cache"
   [ -f "$f" ] && [ -d "$c" ] && has python3 || return 0
-  python3 - "$f" "$c" <<'PY'
+  python3 -I - "$f" "$c" <<'PY'
 import json, os, sys, time
 keep = set()
 for rows in json.load(open(sys.argv[1])).get("plugins", {}).values():
