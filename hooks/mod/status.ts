@@ -28,7 +28,8 @@ export function modelName(id: string): string {
   const bare = raw.replace(/\[[^\]]*\]$/, "");
   const m = FAMILY.exec(bare);
   const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
-  if (m) return `${cap(m[1])} ${m[2]}${m[3] ? `.${m[3]}` : ""}${big}`;
+  // group 1 is `[a-z]+`, so it is a non-empty string whenever the pattern matches.
+  if (m?.[1]) return `${cap(m[1])} ${m[2]}${m[3] ? `.${m[3]}` : ""}${big}`;
   if (/^[a-z]+$/.test(bare)) return `${cap(bare)}${big}`;
   return `${bare}${big}`;
 }

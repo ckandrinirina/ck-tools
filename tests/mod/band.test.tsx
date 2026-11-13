@@ -1,14 +1,31 @@
 import { expect, mock, test } from "claude-code/testing";
-import type { On } from "claude-code";
+import type { CommandRunInput, On, ProcessRunResult, SessionRateLimit } from "claude-code";
 
 const HOUR = 3_600_000;
 const NOW = Date.parse("2026-10-14T12:00:00Z");
 const at = (ms: number) => new Date(NOW + ms).toISOString();
 
-const LIMITS = [
+const LIMITS: SessionRateLimit[] = [
   { kind: "seven_day", percentUsed: 31, resetsAt: at(99 * HOUR) },
   { kind: "five_hour", percentUsed: 40, resetsAt: at(4 * HOUR) },
 ];
+
+// A typed /command as the user enters it at the composer.
+const typed = (command: string): CommandRunInput => ({
+  command,
+  args: "",
+  origin: { kind: "composer" },
+  presentation: { isFullscreen: false, columns: 160 },
+});
+
+// A finished git run, never truncated.
+const ran = (exitCode: number, stdout: string, stderr = ""): ProcessRunResult => ({
+  exitCode,
+  stdout,
+  stderr,
+  isStdoutTruncated: false,
+  isStderrTruncated: false,
+});
 // The 5-hour window is retired: a reading of it, fresh or saved, is never drawn or toasted.
 
 const BAND = {
@@ -28,7 +45,7 @@ const BAND = {
 // A session at NOW with these limits, a store the test can read, and toasts collected.
 function session(
   on: On,
-  limits: unknown[],
+  limits: SessionRateLimit[],
   saved: Record<string, unknown> = {},
   started: { startedAt: number; percent?: number } = { startedAt: NOW },
 ) {
@@ -46,7 +63,7 @@ function session(
       rateLimits: limits,
     },
   }));
-  on("command.register", () => ({ value: undefined }));
+  on("command.register", (_$, e) => ({ value: { command: e.name } }));
   on("ui.toast", (_$, e) => {
     toasts.push(e.text);
     return { value: undefined };
@@ -86,7 +103,7 @@ test("nothing is drawn off a subscription, with no saved reading", async ($, on)
   const ui = await $.ui.mount(BAND as never);
   expect(await ui.find({ text: "other band" })).toBeDefined();
   expect(await ui.find({ text: "7d" })).toBeUndefined();
-  const out = await $.command.run({ command: "usage-pace", args: "" });
+  const out = await $.command.run(typed("usage-pace"));
   expect(out.text).toContain("No plan-limit reading yet");
 });
 
@@ -141,7 +158,7 @@ test("/usage-band hides the band and remembers it; the other bands stay", async 
     isInteractive: true,
     cwd: "/p",
   });
-  const out = await $.command.run({ command: "usage-band", args: "" });
+  const out = await $.command.run(typed("usage-band"));
   expect(out.text).toContain("hidden");
   expect(saved.hidden).toBe(true);
   const ui = await $.ui.mount(BAND as never);
@@ -184,19 +201,10 @@ function repo(on: On, isRepo = true) {
   on("session.cwd", () => ({ value: "/p" }));
   on("process.run", (_$, e) => ({
     value: !isRepo
-      ? { exitCode: 128, stderr: "fatal", stdout: "" }
+      ? ran(128, "", "fatal")
       : e.argv.includes("status")
-        ? {
-            exitCode: 0,
-            stderr: "",
-            stdout:
-              "# branch.oid abc\n# branch.head main\n# branch.ab +1 -0\n? x\n",
-          }
-        : {
-            exitCode: 0,
-            stderr: "",
-            stdout: " 1 file changed, 4 insertions(+)\n",
-          },
+        ? ran(0, "# branch.oid abc\n# branch.head main\n# branch.ab +1 -0\n? x\n")
+        : ran(0, " 1 file changed, 4 insertions(+)\n"),
   }));
 }
 
@@ -219,7 +227,7 @@ test("the status row shows branch, diff, model, context and session time", async
 test("/usage-band hides the weekly limit only; the status row stays", async ($, on) => {
   repo(on);
   await $.session.start({ surface: "terminal", isInteractive: true, cwd: "/p" });
-  await $.command.run({ command: "usage-band", args: "" });
+  await $.command.run(typed("usage-band"));
   const ui = await $.ui.mount(BAND as never);
   expect(await ui.find({ text: "7d" })).toBeUndefined();
   expect(await ui.find({ text: "◆ Opus 5.5" })).toBeDefined();
@@ -232,7 +240,7 @@ test("git runs with the repo's command-running config turned off", async ($, on)
   on("session.cwd", () => ({ value: "/p" }));
   on("process.run", (_$, e) => {
     calls.push([...e.argv]);
-    return { value: { exitCode: 0, stderr: "", stdout: "# branch.head main\n" } };
+    return { value: ran(0, "# branch.head main\n") };
   });
   await $.session.start({ surface: "terminal", isInteractive: true, cwd: "/p" });
   expect(calls.length).toBe(2);

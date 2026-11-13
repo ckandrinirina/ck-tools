@@ -15,7 +15,7 @@
 // the band at once, marked with its age. Pure rules live in logic.ts and status.ts.
 
 import { atom, read, update } from "claude-code";
-import type { EngineInterface, Register } from "claude-code";
+import type { EngineInterface, Register, RenderNode } from "claude-code";
 
 import type { Alerted, Reading, Snapshot } from "./logic";
 import type { Status } from "./status";
@@ -268,7 +268,7 @@ export const register: Register = (on, options) => {
     );
 
     // ---- the status row: ⎇ main +4 −0 ↑1 │ ◆ Opus 5.5 │ ctx ▰▱▱▱▱▱ 12% │ ◷ 1h05m
-    const segs: { el: unknown; width: number }[] = [];
+    const segs: { el: RenderNode; width: number }[] = [];
     if (s?.git) {
       const g = s.git;
       const bits = [
@@ -396,7 +396,7 @@ export const register: Register = (on, options) => {
 
     // Pack segments then cells into rows of at most bodyColumns, a separator between each.
     const items = [...segs, ...cells];
-    const lines: { el: unknown; width: number }[][] = [];
+    const lines: { el: RenderNode; width: number }[][] = [];
     for (const it of items) {
       const line = lines[lines.length - 1];
       const used = line ? line.reduce((n, x) => n + x.width + 3, -3) : 0;
