@@ -93,6 +93,10 @@ context window is (green under 50%, amber under 80%, red after); how long the se
 Git is read at the end of every turn and once a minute, never more than every 5 seconds. It
 replaces a `ccstatusline`-style status line, so you can drop that from your `statusLine` command.
 
+In Claude Desktop (and the editor and mobile apps), which set text in a proportional font, the
+bars are drawn as rounded progress pills, the separators as dots and the percentages in
+fixed-width digits; the terminal keeps the glyph row above.
+
 **Weekly limit**: how much of the 7-day window you have used, whether your pace is safe or will
 run out before the reset, and when it resets. Claude no longer enforces the 5-hour window, so
 the band ignores it, including a reading saved by an older ck-tools.
