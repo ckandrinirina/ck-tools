@@ -5,6 +5,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), [Semantic Vers
 
 ## [Unreleased]
 
+## [2.10.0] — 2026-11-25
+
+### Added
+- **qa-validator**: lists `REPL`, so it can use Claude Code's experimental Code Mode. Without Code Mode the name is ignored.
+- **plugin.json**: `engines["claude-code"]` is `>=2.1.287`. Claude Code 2.0.15 to 2.1.75 cannot load a plugin that has it.
+
+### Changed
+- **README**: tested against Claude Code 2.1.330.
+
 ## [2.9.3] — 2026-11-13
 
 ### Changed
