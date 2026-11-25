@@ -132,7 +132,7 @@ across every session on the machine.
   the first response of a session. The last reading is kept in the plugin store, so a new session
   draws it at once, marked `(as of 12m ago)`. Off a subscription the band stays empty.
 
-Needs Claude Code 2.1.287 or later (mods); tested with 2.1.299. Under `--bare`, `--safe-mode` or
+Needs Claude Code 2.1.287 or later (mods; `engines` in `plugin.json`); tested with 2.1.330. Under `--bare`, `--safe-mode` or
 `disableAllHooks` the band is simply absent. `claude plugin validate .` and
 `claude plugin test .` check it offline (`tests/mod/`), and CI runs both.
 
