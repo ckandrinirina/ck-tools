@@ -5,6 +5,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), [Semantic Vers
 
 ## [Unreleased]
 
+## [2.10.1] — 2026-11-26
+
+### Changed
+- **deliver**: once a PR is opened, the summary points at Claude Code's built-in `/steward`, which watches the PR and fixes CI, conflicts and review comments, and never merges. `references/native-commands.md` explains why to use it instead of `/ship`, and how to keep its fix commits free of AI attribution.
+
 ## [2.10.0] — 2026-11-25
 
 ### Added
