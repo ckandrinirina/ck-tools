@@ -11,9 +11,10 @@
 # Roots are where git repositories are looked for (depth ≤ 3); default: CK_DISK_ROOTS
 # (colon-separated), else ~/Dev ~/dev ~/Projects ~/projects ~/code ~/src ~/work, plus the
 # current repository. Every category removes only what can be rebuilt or downloaded again,
-# or what a removed checkout owned. A worktree with uncommitted or unmerged work, or locked
-# by a live process, is reported and never touched; named Docker volumes and the main
-# checkout's build output are only cleaned when their own key is passed.
+# or what a removed checkout owned. A worktree with uncommitted or unmerged work, one whose
+# git status fails, or one locked by a live process is reported and never touched; a running
+# container is never removed; named Docker volumes and the main checkout's build output are
+# only cleaned when their own key is passed.
 # bash 3.2 compatible.
 
 set -uo pipefail
@@ -73,7 +74,7 @@ worktrees() {
 }
 
 wt_rows() {  # porcelain blocks of linked worktrees → rows
-  local wt="" br="" lk="" sha="" pid why line repo
+  local wt="" br="" lk="" sha="" pid why line repo st
     while IFS= read -r line; do
       case "$line" in
         "worktree "*) wt="${line#worktree }" ;;
@@ -91,7 +92,12 @@ wt_rows() {  # porcelain blocks of linked worktrees → rows
               pid="$(printf '%s' "$lk" | sed -n 's/.*(pid \([0-9][0-9]*\).*/\1/p')"
               if [ -z "$pid" ] || kill -0 "$pid" 2>/dev/null; then why="locked by a live process"; fi
             fi
-            [ -n "$why" ] || [ -z "$(g -C "$wt" status --porcelain 2>/dev/null | head -1)" ] || why="uncommitted changes"
+            # fail closed: a status that errors (corrupt index, dubious ownership) proves nothing
+            # clean, and a clean verdict here leads to `worktree remove --force`
+            if [ -z "$why" ]; then
+              st="$(g -C "$wt" --no-optional-locks status --porcelain 2>/dev/null)" || why="git status failed"
+              [ -n "$why" ] || [ -z "$st" ] || why="uncommitted changes"
+            fi
             [ -n "$why" ] || landed_in "$repo" "$sha" || why="unmerged commits"
             printf '%s%s%s%s%s\n' "$wt" "$US" "$br" "$US" "${why:-done}"
           fi
@@ -283,15 +289,21 @@ EOF
 say() { echo "ck-disk: $1"; }
 
 clean_one() {
-  local key="$1" kb0 kb1 list wt br why n d v pj repo
+  local key="$1" kb0 kb1 list wt br why n d v pj repo busy r
   case "$key" in
     worktrees)
-      n=0; kb0=0
+      n=0; kb0=0; busy=0
       while IFS="$US" read -r wt br why; do
         [ "$why" = "done" ] || continue
         repo="$(dirname -- "$(g -C "$wt" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)")"
+        # a running container still uses the checkout: keep both; stopped ones go with it
+        if dk_up; then
+          if [ -n "$(docker ps -q --filter "label=com.docker.compose.project.working_dir=$wt" --filter status=running 2>/dev/null)" ]; then
+            busy=$((busy + 1)); continue
+          fi
+          docker ps -aq --filter "label=com.docker.compose.project.working_dir=$wt" 2>/dev/null | xargs docker rm -v >/dev/null 2>&1
+        fi
         kb0=$((kb0 + $(kb_of "$wt")))
-        dk_up && docker ps -aq --filter "label=com.docker.compose.project.working_dir=$wt" 2>/dev/null | xargs docker rm -f -v >/dev/null 2>&1
         g -C "$repo" worktree unlock "$wt" >/dev/null 2>&1
         if g -C "$repo" worktree remove --force "$wt" 2>/dev/null; then
           n=$((n + 1)); [ -z "$br" ] || g -C "$repo" branch -d "$br" >/dev/null 2>&1
@@ -299,7 +311,8 @@ clean_one() {
       done <<EOF
 $(worktrees)
 EOF
-      say "worktrees — removed $n finished worktree(s), $(human "$kb0")" ;;
+      say "worktrees — removed $n finished worktree(s), $(human "$kb0")"
+      [ "$busy" = 0 ] || say "worktrees — kept $busy with a running container (stop it, then clean again)" ;;
     worktree-builds)
       kb0=0; n=0
       while IFS="$US" read -r wt br why; do
@@ -315,8 +328,12 @@ EOF
       say "worktree-builds — freed $(human "$kb0") of build output in $n kept worktree(s)" ;;
     docker-orphans)
       dk_up || { say "docker-orphans — Docker is not running, skipped"; return; }
-      list="$(dk_orphans)"; n=0
-      [ -z "$list" ] || n="$(printf '%s\n' "$list" | cut -d "$US" -f1 | xargs docker rm -f -v 2>/dev/null | grep -c .)"
+      list="$(dk_orphans)"; n=0; r=0
+      # stopped ones only: a running container is in use, whatever its checkout's fate
+      if [ -n "$list" ]; then
+        n="$(printf '%s\n' "$list" | awk -F"$US" '$2 != "running" { print $1 }' | xargs docker rm -v 2>/dev/null | grep -c .)"
+        r="$(printf '%s\n' "$list" | awk -F"$US" '$2 == "running"' | grep -c .)"
+      fi
       # Volumes of a removed worktree's own compose project. Only a project named after its
       # .claude/worktrees/<name> folder is provably that worktree's: a compose file in a
       # subfolder is named after it, and checkouts sharing a name share its volumes.
@@ -331,7 +348,8 @@ EOF
       done <<EOF
 $(dk_dangling)
 EOF
-      say "docker-orphans — removed $n container(s) and $d volume(s) of removed checkouts" ;;
+      say "docker-orphans — removed $n container(s) and $d volume(s) of removed checkouts"
+      [ "$r" = 0 ] || say "docker-orphans — kept $r running container(s) (stop them, then clean again)" ;;
     docker-cache)
       dk_up || { say "docker-cache — Docker is not running, skipped"; return; }
       kb0=$(( $(dk_df_kb Images) + $(dk_df_kb "Build Cache") ))

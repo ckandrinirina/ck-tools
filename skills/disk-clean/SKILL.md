@@ -34,9 +34,9 @@ The keys it can print:
 
 | Key | What it frees |
 |---|---|
-| `worktrees` | linked worktrees that are merged, clean and not locked by a live process — removed with their branch and their Docker containers |
+| `worktrees` | linked worktrees that are merged, clean and not locked by a live process — removed with their branch and their stopped Docker containers; one with a running container is kept |
 | `worktree-builds` | `target/`, `node_modules/`, … in worktrees kept for unmerged or uncommitted work — source and commits stay |
-| `docker-orphans` | containers (and that worktree's own compose volumes) whose working directory no longer exists |
+| `docker-orphans` | stopped containers (and that worktree's own compose volumes) whose working directory no longer exists — running ones are listed, never removed |
 | `docker-cache` | images no container uses and the build cache — pulled or rebuilt again on demand |
 | `docker-anon` | anonymous volumes no container uses |
 | `docker-volumes` | **named** volumes no container uses — may hold a dev database; listed, never offered as a group |
