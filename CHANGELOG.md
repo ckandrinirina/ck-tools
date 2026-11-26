@@ -5,6 +5,17 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), [Semantic Vers
 
 ## [Unreleased]
 
+## [2.10.3] — 2026-11-26
+
+### Fixed
+- **disk-clean**: `ck-disk` read an empty `git status` as clean, so a worktree whose status failed (a corrupt index, dubious ownership) was marked finished and removed with `--force`, uncommitted work included. It now fails closed and reports `git status failed`. A finished worktree with a running container is kept, stopped containers go with `docker rm -v` instead of `-f`, and `docker-orphans` never removes a running container.
+
+### Changed
+- **status row**: git runs with `--no-optional-locks`, so a background refresh never holds `index.lock` while an agent commits. Session start no longer waits for the first git refresh, and the minute and update-check timers are cancelled before being re-armed.
+- **report hook**: reads the plugin manifest only when a Bash result looks like a crash, about 14 ms less on every Bash call.
+- **hooks**: the format hook has a 60 s timeout and no longer matches `NotebookEdit`, which it never acted on.
+- **CI**: a new `tests/smoke.sh` (ck-disk, the report hook, the format hook) runs on Linux and macOS, with shellcheck on `bin/` and `scripts/`.
+
 ## [2.10.2] — 2026-11-26
 
 ### Changed
