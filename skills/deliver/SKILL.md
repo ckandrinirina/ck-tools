@@ -178,6 +178,11 @@ Print:
 **PR:** <URL — or "skipped">
 ```
 
+When a PR was opened, add one line: `Watch it: type /steward — it fixes CI, conflicts and
+review comments until merge, never merges (desktop app: the PR's Auto-fix)`. Never suggest
+the built-in `/ship`: it commits every uncommitted file unasked
+([native-commands.md](../../references/native-commands.md#steward--watch-the-pr-deliver-opened-cc--21330-terminal)).
+
 ## STANDALONE GUIDELINES
 
 ### Commit Messages Must Be Clean

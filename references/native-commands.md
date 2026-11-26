@@ -49,6 +49,19 @@ on the PR.
 | before `release-prep` cuts a production release | `/code-review high` |
 | a `dependency-upgrade` phase touching many files | `/code-review ultra` |
 
+## `/steward` — watch the PR `deliver` opened (CC ≥ 2.1.330, terminal)
+
+`deliver` stops once the PR is open. `/steward` takes over from there: in this session it fixes
+failing checks, merges the base branch on a conflict and answers review comments, pushing each
+fix, until the PR is merged or closed. It never merges. It starts only from a line you type,
+never from a skill. In the desktop app, turn on the PR's **Auto-fix** instead.
+
+Reach for `/steward`, never the built-in `/ship`, after `deliver`. `/ship` commits *every*
+uncommitted file with no confirmation, including the secrets and churn `deliver` left
+unstaged. `/steward`'s own fix commits follow Claude Code's attribution setting, not
+`deliver`'s no-AI-references rule. To keep them clean, set
+`"attribution": { "commit": "", "pr": "" }` in `~/.claude/settings.json`.
+
 ## RTK — a third-party hook that shrinks command output
 
 Not a Claude Code built-in, but it plugs into one. [RTK](https://github.com/ckandrinirina/rtk)
