@@ -1,6 +1,11 @@
 import { expect, mock, test } from "claude-code/testing";
 import type { CommandRunInput, On, ProcessRunResult, SessionRateLimit } from "claude-code";
 
+// session.start no longer waits for git: let its background status refresh land.
+type Timers = { setTimeout: (f: () => void, ms: number) => unknown };
+const settled = () =>
+  new Promise<void>((r) => (globalThis as unknown as Timers).setTimeout(() => r(), 20));
+
 const HOUR = 3_600_000;
 const NOW = Date.parse("2026-10-14T12:00:00Z");
 const at = (ms: number) => new Date(NOW + ms).toISOString();
@@ -211,6 +216,7 @@ function repo(on: On, isRepo = true) {
 test("the status row shows branch, diff, model, context and session time", async ($, on) => {
   repo(on);
   await $.session.start({ surface: "terminal", isInteractive: true, cwd: "/p" });
+  await settled();
   const ui = await $.ui.mount(BAND as never);
   expect(await ui.find({ text: "⎇ main" })).toBeDefined();
   expect(await ui.find({ text: "+4" })).toBeDefined();
@@ -243,10 +249,12 @@ test("git runs with the repo's command-running config turned off", async ($, on)
     return { value: ran(0, "# branch.head main\n") };
   });
   await $.session.start({ surface: "terminal", isInteractive: true, cwd: "/p" });
+  await settled();
   expect(calls.length).toBe(2);
   for (const argv of calls) {
     expect(argv).toContain("core.fsmonitor=false");
     expect(argv).toContain("core.hooksPath=/dev/null");
+    expect(argv).toContain("--no-optional-locks");
   }
   expect(calls[1]).toContain("--no-ext-diff");
   expect(calls[1]).toContain("--no-textconv");
@@ -255,6 +263,7 @@ test("git runs with the repo's command-running config turned off", async ($, on)
 test("outside a git repo the row draws without the branch", async ($, on) => {
   repo(on, false);
   await $.session.start({ surface: "terminal", isInteractive: true, cwd: "/p" });
+  await settled();
   const ui = await $.ui.mount(BAND as never);
   expect(await ui.find({ text: /⎇/ })).toBeUndefined();
   expect(await ui.find({ text: "◆ Opus 5.5" })).toBeDefined();

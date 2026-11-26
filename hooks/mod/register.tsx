@@ -59,7 +59,9 @@ let gitAt = 0;
 // A cloned repo's own .git/config can name commands git runs on a status or a diff (an
 // fsmonitor, an external diff, a textconv driver): every one is turned off, since this runs
 // unasked, once a minute, in whatever repo the session is in. The engine already turns hooks off.
-const GIT = ["git", "-c", "core.fsmonitor=false", "-c", "core.hooksPath=/dev/null"];
+// --no-optional-locks: a background status must never hold index.lock while an agent commits.
+const GIT = ["git", "-c", "core.fsmonitor=false", "-c", "core.hooksPath=/dev/null", "--no-optional-locks"];
+let ticker: { cancel: () => void } | undefined;
 let thresholds: number[] = [80, 95];
 
 // The saved reading and the hidden flag, back into $.state: at start, and after /clear,
@@ -178,9 +180,12 @@ export const register: Register = (on, options) => {
       } catch {
         // No reading yet: the saved one stands until session.measure brings one.
       }
-      await refreshStatus($, true);
+      // Not awaited: two git calls on a large repo must not hold up the session start.
+      void refreshStatus($, true).catch(() => undefined);
       // The reset countdown and the session time move by the minute; git may move any time.
-      $.clock.every(60_000, () => {
+      // One timer per process, however often the session starts.
+      ticker?.cancel();
+      ticker = $.clock.every(60_000, () => {
         void tick($);
         void refreshStatus($).catch(() => undefined);
       });

@@ -6,11 +6,12 @@
   "hooks": {
     "PostToolUse": [
       {
-        "matcher": "Write|Edit|MultiEdit|NotebookEdit",
+        "matcher": "Write|Edit|MultiEdit",
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/scripts/format.sh"
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/scripts/format.sh",
+            "timeout": 60
           }
         ]
       },
