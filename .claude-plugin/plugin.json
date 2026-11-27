@@ -2,8 +2,8 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "ck-tools",
   "displayName": "CK Tools",
-  "description": "Optional toolkit for Claude Code: utility skills for dependency upgrades, audits, snapshots and other repo-level chores, plus a band above the prompt with a status row (branch, diff, model, context, session time) and your weekly plan limit and pace. Designed to coexist with ck-code without overlapping its spec-driven workflow.",
-  "version": "2.10.3",
+  "description": "Optional toolkit for Claude Code: utility skills for dependency upgrades, audits, snapshots and other repo-level chores, plus a band above the prompt with a status row (branch, diff, model, context, session time) your weekly plan limit and pace, and a warning when disk space runs short. Designed to coexist with ck-code without overlapping its spec-driven workflow.",
+  "version": "2.11.0",
   "author": {
     "name": "ckandrinirina",
     "email": "ckandrinirina@gmail.com"
@@ -52,6 +52,24 @@
       "title": "Plan-limit toast thresholds",
       "description": "Comma-separated percentages that each toast once per window, such as 80,95.",
       "default": "80,95"
+    },
+    "disk_alert": {
+      "type": "boolean",
+      "title": "Disk-space warning",
+      "description": "Check free disk space now and then, and show a segment above the prompt plus one toast when it runs short, pointing at /ck-tools:disk-clean.",
+      "default": true
+    },
+    "disk_alert_free_gb": {
+      "type": "string",
+      "title": "Disk-space warning threshold (GB)",
+      "description": "Warn under this many GB free; red under a quarter of it.",
+      "default": "20"
+    },
+    "disk_check_every": {
+      "type": "string",
+      "title": "Disk-space check period",
+      "description": "How often free space is checked across all sessions: hour, day, week or month. While space is short it is checked hourly.",
+      "default": "day"
     },
     "update_check": {
       "type": "boolean",
