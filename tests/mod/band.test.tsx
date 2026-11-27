@@ -245,7 +245,8 @@ test("git runs with the repo's command-running config turned off", async ($, on)
   on("session.model", () => ({ value: "opus" }));
   on("session.cwd", () => ({ value: "/p" }));
   on("process.run", (_$, e) => {
-    calls.push([...e.argv]);
+    // The disk check runs df beside git; only git's calls are checked here.
+    if (e.argv[0] === "git") calls.push([...e.argv]);
     return { value: ran(0, "# branch.head main\n") };
   });
   await $.session.start({ surface: "terminal", isInteractive: true, cwd: "/p" });
@@ -279,4 +280,61 @@ test("on desktop the bars are Svg pills and the separators dots; the terminal ke
   const term = await $.ui.mount(BAND as never);
   expect(await term.find({ type: "Svg" })).toBeUndefined();
   expect(await term.find({ text: /█/ })).toBeDefined();
+});
+
+// ---- disk space
+
+const DF = (freeKb: number, totalKb = 488245288) =>
+  `Filesystem 1024-blocks Used Available Capacity Mounted on\n/dev/disk1s1 ${totalKb} 1 ${freeKb} 88% /System/Volumes/Data\n`;
+const GB = 1_048_576;
+
+function diskSession(on: On, freeKb: number, saved: Record<string, unknown> = {}) {
+  const out = session(on, LIMITS, saved);
+  const dfCalls: string[][] = [];
+  on("session.cwd", () => ({ value: "/p" }));
+  on("process.run", (_$, e) => {
+    if (e.argv[0] !== "df") return { value: ran(128, "", "fatal") };
+    dfCalls.push([...e.argv]);
+    return { value: ran(0, DF(freeKb)) };
+  });
+  return { ...out, dfCalls };
+}
+
+test("short disk space draws a segment and toasts once, pointing at disk-clean", async ($, on) => {
+  const { toasts, saved, dfCalls } = diskSession(on, 8 * GB);
+  await $.session.start({ surface: "terminal", isInteractive: true, cwd: "/p" });
+  await settled();
+  const ui = await $.ui.mount(BAND as never);
+  expect(await ui.find({ text: /⛁ 8\.0 GB free · \/ck-tools:disk-clean/ })).toBeDefined();
+  expect(toasts.filter((t) => t.startsWith("Disk"))).toEqual([
+    "Disk space low: 8.0 GB free (2%) — /ck-tools:disk-clean shows what can go",
+  ]);
+  expect(dfCalls).toEqual([["df", "-Pk", "/p"]]);
+  expect(saved.diskAlerted).toBe("low");
+  // A second session inside the period reuses the saved reading: no df, no second toast.
+  await $.session.start({ surface: "terminal", isInteractive: true, cwd: "/p" });
+  await settled();
+  expect(dfCalls.length).toBe(1);
+  expect(toasts.filter((t) => t.startsWith("Disk")).length).toBe(1);
+});
+
+test("enough free space draws nothing; /disk-space checks now and reports", async ($, on) => {
+  const { dfCalls } = diskSession(on, 200 * GB);
+  await $.session.start({ surface: "terminal", isInteractive: true, cwd: "/p" });
+  await settled();
+  const ui = await $.ui.mount(BAND as never);
+  expect(await ui.find({ text: /⛁/ })).toBeUndefined();
+  const out = await $.command.run(typed("disk-space"));
+  expect(out.text).toContain("200 GB free");
+  expect(out.text).toContain("enough space");
+  expect(out.text).toContain("checked every day");
+  expect(dfCalls.length).toBe(2);
+});
+
+test("a saved reading past its period is checked again", async ($, on) => {
+  const disk = { freeKb: 200 * GB, totalKb: 488245288, at: NOW - 25 * HOUR };
+  const { dfCalls } = diskSession(on, 200 * GB, { disk });
+  await $.session.start({ surface: "terminal", isInteractive: true, cwd: "/p" });
+  await settled();
+  expect(dfCalls.length).toBe(1);
 });

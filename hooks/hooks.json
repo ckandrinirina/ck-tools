@@ -1,5 +1,5 @@
 {
-  "description": "ck-tools hooks: the formatter after edits, and the mod (hooks module) for the plan-limit band, its toasts, the update check and the zero-model /usage-pace and /usage-band, and the bug reporter that spots a crash in this plugin's own scripts",
+  "description": "ck-tools hooks: the formatter after edits, and the mod (hooks module) for the plan-limit band, its toasts, the update check, the disk-space warning and the zero-model /usage-pace, /usage-band and /disk-space, and the bug reporter that spots a crash in this plugin's own scripts",
   "modules": [
     "./mod/register.tsx"
   ],

@@ -20,6 +20,8 @@ declare module "claude-code" {
         ctx?: number;
         startedAt?: number;
       } | null;
+      // The last free-space reading of the session's disk, shared through the store.
+      disk: { freeKb: number; totalKb: number; at: number } | null;
     };
   }
 }

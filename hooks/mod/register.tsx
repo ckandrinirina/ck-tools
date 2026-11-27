@@ -7,7 +7,10 @@
 //   status row         git branch and diff, model, context fill, session time: the status line
 //   session.measure    records each new weekly reading, toasts at thresholds
 //   AbovePrompt band   the status row, then the weekly use, pace and reset; other bands below
-//   commands           /usage-pace (the full report) and /usage-band (show or hide), no model turn
+//   disk warning       df on the session's disk once per disk_check_every (hourly while low);
+//                      a segment and one toast per level when space runs short
+//   commands           /usage-pace (the full report), /usage-band (show or hide) and
+//                      /disk-space (check now), no model turn
 //
 // The readings are the ones the status line gets: Pro and Max plans only, after the first
 // response. The 5-hour window is retired: logic.ts drops it wherever a reading enters. The last
@@ -29,6 +32,18 @@ import {
   slimBar,
 } from "./status";
 import { registerUpdateCheck, startUpdateCheck } from "./update";
+import type { DiskLevel, DiskReading } from "./disk";
+import {
+  diskAlert,
+  diskColor,
+  diskLevel,
+  diskReport,
+  diskText,
+  dueAt,
+  lowGb,
+  parseDf,
+  periodMs,
+} from "./disk";
 import {
   ageText,
   alertsFor,
@@ -48,6 +63,7 @@ const usage = atom({ plugin: "ck-tools", key: "usage" } as const, null);
 const now = atom({ plugin: "ck-tools", key: "now" } as const, 0);
 const hidden = atom({ plugin: "ck-tools", key: "hidden" } as const, false);
 const status = atom({ plugin: "ck-tools", key: "status" } as const, null);
+const disk = atom({ plugin: "ck-tools", key: "disk" } as const, null);
 
 let updateOn = true;
 let bandOn = true;
@@ -63,6 +79,9 @@ let gitAt = 0;
 const GIT = ["git", "-c", "core.fsmonitor=false", "-c", "core.hooksPath=/dev/null", "--no-optional-locks"];
 let ticker: { cancel: () => void } | undefined;
 let thresholds: number[] = [80, 95];
+let diskOn = true;
+let diskLow = 20;
+let diskPeriod = periodMs("day");
 
 // The saved reading and the hidden flag, back into $.state: at start, and after /clear,
 // /resume and /branch, which reset every atom.
@@ -74,6 +93,42 @@ async function load($: EngineInterface): Promise<void> {
     await update($, hidden, () => true);
   await update($, now, () => 0);
   await tick($);
+}
+
+const isReading = (v: unknown): v is DiskReading =>
+  !!v &&
+  typeof (v as DiskReading).freeKb === "number" &&
+  typeof (v as DiskReading).totalKb === "number" &&
+  (v as DiskReading).totalKb > 0 &&
+  typeof (v as DiskReading).at === "number";
+
+// Free space on the session's disk: the saved reading while it is fresh, else df, at most once
+// per period across every session on the machine (hourly while space is short). df is the only
+// thing run — never du — so a check costs milliseconds.
+async function checkDisk($: EngineInterface, force = false): Promise<void> {
+  if (!diskOn) return;
+  const t = await $.clock.now();
+  const mine = await read($, disk);
+  if (!force && mine && t < dueAt(mine, diskPeriod, diskLow)) return;
+  // Another session may have checked meanwhile.
+  const savedRaw = await $.store.get("disk");
+  let r = isReading(savedRaw) ? savedRaw : undefined;
+  if (force || !r || t >= dueAt(r, diskPeriod, diskLow)) {
+    const cwd = await $.session.cwd();
+    const out = await $.process.run(["df", "-Pk", cwd], { cwd, timeoutMs: 3_000 });
+    const parsed = out.exitCode === 0 ? parseDf(out.stdout) : undefined;
+    if (parsed) {
+      r = { ...parsed, at: t };
+      await $.store.set("disk", r);
+      if (alertsOn) {
+        const seen = (await $.store.get("diskAlerted")) as DiskLevel | undefined;
+        const a = diskAlert(diskLevel(r, diskLow), r, seen);
+        if (a.toast) $.ui.toast(a.toast, { timeoutMs: 8000 });
+        if (a.next !== seen) await $.store.set("diskAlerted", a.next);
+      }
+    }
+  }
+  await update($, disk, () => r ?? null);
 }
 
 async function tick($: EngineInterface): Promise<void> {
@@ -164,6 +219,9 @@ export const register: Register = (on, options) => {
   const parsed = parseThresholds(options.usage_alert_at);
   thresholds = parsed.length ? parsed : [80, 95];
   updateOn = options.update_check !== false;
+  diskOn = options.disk_alert !== false;
+  diskLow = lowGb(options.disk_alert_free_gb);
+  diskPeriod = periodMs(options.disk_check_every);
   registerUpdateCheck(on);
 
   on("session.start", async ($, e, next) => {
@@ -182,12 +240,14 @@ export const register: Register = (on, options) => {
       }
       // Not awaited: two git calls on a large repo must not hold up the session start.
       void refreshStatus($, true).catch(() => undefined);
+      void checkDisk($).catch(() => undefined);
       // The reset countdown and the session time move by the minute; git may move any time.
       // One timer per process, however often the session starts.
       ticker?.cancel();
       ticker = $.clock.every(60_000, () => {
         void tick($);
         void refreshStatus($).catch(() => undefined);
+        void checkDisk($).catch(() => undefined);
       });
       await $.command.register({
         name: "usage-pace",
@@ -200,6 +260,12 @@ export const register: Register = (on, options) => {
         description: "Show or hide the weekly plan limit above the prompt",
         immediate: true,
       });
+      if (diskOn)
+        await $.command.register({
+          name: "disk-space",
+          description: "Free disk space now, and whether /ck-tools:disk-clean is due, with no model turn",
+          immediate: true,
+        });
     } catch {
       // Nothing here is load-bearing: a failed store or command call must not stop the session.
     }
@@ -212,6 +278,7 @@ export const register: Register = (on, options) => {
     async ($, e, next) => {
       await load($);
       await refreshStatus($, true);
+      await checkDisk($).catch(() => undefined);
       return next(e);
     },
   ).catch(($, e, next) => next(e));
@@ -242,6 +309,15 @@ export const register: Register = (on, options) => {
   on("command.run", { command: "usage-pace" }, async ($) => {
     const snapshot = await read($, usage);
     return { text: report(snapshot, await $.clock.now()) };
+  });
+
+  on("command.run", { command: "disk-space" }, async ($) => {
+    try {
+      await checkDisk($, true);
+    } catch {
+      // The report says there is no reading.
+    }
+    return { text: diskReport((await read($, disk)) ?? undefined, diskLow, diskPeriod, await $.clock.now()) };
   });
 
   on("command.run", { command: "usage-band" }, async ($) => {
@@ -371,6 +447,20 @@ export const register: Register = (on, options) => {
         width: 12 + pct.length,
       });
     }
+    // ---- disk space, only while it runs short: ⛁ 8.2 GB free · /ck-tools:disk-clean
+    const d = diskOn ? await read($, disk) : null;
+    const dLevel = d ? diskLevel(d, diskLow) : "ok";
+    const dSeg =
+      d && dLevel !== "ok"
+        ? {
+            el: (
+              <Text key="disk" color={diskColor(dLevel)} bold={dLevel === "critical"}>
+                {diskText(d)}
+              </Text>
+            ),
+            width: diskText(d).length,
+          }
+        : undefined;
     if (s?.startedAt !== undefined) {
       const dur = sessionText(s.startedAt, t);
       segs.push({
@@ -422,6 +512,7 @@ export const register: Register = (on, options) => {
         ),
       };
     });
+    if (dSeg) segs.push(dSeg);
     if (segs.length === 0 && cells.length === 0) return next(e);
 
     // Pack segments then cells into rows of at most bodyColumns, a separator between each.
