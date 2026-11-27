@@ -5,6 +5,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), [Semantic Vers
 
 ## [Unreleased]
 
+## [2.11.0] — 2026-11-27
+
+### Added
+- **mod**: a disk-space warning in the band above the prompt. The mod reads free space with `df` once per `disk_check_every` (`hour`, `day`, `week` or `month`; default `day`, shared by every session, hourly while space is short) and, under `disk_alert_free_gb` (20 GB), draws an amber `⛁ 8.2 GB free · /ck-tools:disk-clean` segment, red under a quarter of it, with one toast per step down. `/disk-space` checks now with no model turn; `disk_alert` turns it off.
+
 ## [2.10.3] — 2026-11-26
 
 ### Fixed
