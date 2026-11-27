@@ -118,7 +118,8 @@ across every session on the machine.
   ck-tools in `~/.claude/settings.json` instead of per project. ck-code's and ck-code-lite's
   bands draw under it.
 - **Commands**, with no model turn: `/usage-pace` prints the full report; `/usage-band` hides or
-  shows the weekly limit (the status row stays), remembered across sessions.
+  shows the weekly limit (the status row stays), remembered across sessions; `/disk-space` checks
+  free disk space now.
 - **Settings** (`/plugin` → ck-tools → configure): `status_row`, `usage_band` and `usage_alerts`
   turn the status row, the weekly limit and the toasts off; `usage_alert_at` sets the thresholds (`80,95`); `update_check` turns off the
   update check below.
@@ -128,6 +129,13 @@ across every session on the machine.
   Checked at most every 6 hours, never for a `--plugin-dir` checkout, never under
   `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` or `CK_UPDATE_CHECK=off`. ck-code and ck-code-lite
   check themselves the same way.
+- **Disk space**: once a day by default (`disk_check_every`: `hour`, `day`, `week` or `month`,
+  shared by every session on the machine), the mod reads free space on the session's disk with
+  `df` — never `du`, so it costs milliseconds. Under 20 GB free (`disk_alert_free_gb`) the band
+  gets an amber `⛁ 8.2 GB free · /ck-tools:disk-clean` segment, red under a quarter of that, with
+  one toast per step down; while space is short it is checked hourly, so the warning clears soon
+  after a clean. Nothing is drawn while there is enough space. `/disk-space` checks now, with no
+  model turn; `disk_alert` turns it all off.
 - **Figures**: the plan-limit readings the status line gets, on a claude.ai Pro or Max plan, after
   the first response of a session. The last reading is kept in the plugin store, so a new session
   draws it at once, marked `(as of 12m ago)`. Off a subscription the band stays empty.
